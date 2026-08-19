@@ -18,6 +18,14 @@ export interface LocalStorePort {
   getEntryByFeedAndGuid(feedId: string, guid: string): Promise<Entry | undefined>;
   putEntry(entry: Entry): Promise<void>;
   deleteEntry(id: string): Promise<void>;
+  /**
+   * Writes a feed and all of its entries atomically, in one IndexedDB
+   * transaction (Finding 1, Slice 5 correction round). `subscribeToFeed`
+   * uses this instead of calling `putFeed` + `putEntry` in a loop, so a
+   * write failure partway through never leaves the feed persisted with
+   * only some of its entries, or entries persisted with no owning feed.
+   */
+  putFeedWithEntries(feed: Feed, entries: readonly Entry[]): Promise<void>;
 
   /** All entries for one feed, unordered (`by-feed`). */
   listEntriesByFeed(feedId: string): Promise<Entry[]>;

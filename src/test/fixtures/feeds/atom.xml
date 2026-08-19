@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Atom Blog</title>
+<link rel="alternate" href="https://example.org/"/>
+<id>https://example.org/</id>
+<updated>2024-01-01T10:00:00Z</updated>
+<entry>
+<title>Atom Post</title>
+<link rel="alternate" href="https://example.org/post-1"/>
+<id>tag:example.org,2024:post-1</id>
+<updated>2024-01-01T10:00:00Z</updated>
+<published>2024-01-01T09:00:00Z</published>
+<summary>A short summary</summary>
+<content type="html">&lt;p&gt;Full &lt;em&gt;content&lt;/em&gt;&lt;/p&gt;</content>
+</entry>
+</feed>

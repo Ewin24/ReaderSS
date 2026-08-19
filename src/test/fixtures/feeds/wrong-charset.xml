@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rss version="2.0">
+<channel>
+<title>Wrong Charset Blog</title>
+<link>https://charset.example</link>
+<description>Declares ISO-8859-1 but is delivered as a decoded UTF-8 JS string, as fetch() always produces</description>
+<item>
+<title>Caf&#233; Post</title>
+<link>https://charset.example/cafe</link>
+<pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
+<description>Uses accented characters despite the declared legacy encoding</description>
+</item>
+</channel>
+</rss>

@@ -29,6 +29,15 @@ export interface PrunableEntry {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
+ * Finding 2, Slice 5 correction round: this module has NO production call
+ * site yet. It was built in Slice 2 with its own unit tests, but nothing on
+ * the ingestion path (`services/subscribeToFeed.ts`) invokes it, so no
+ * per-feed cap or quota guard is currently enforced anywhere. This is a
+ * deliberate, stated deferral, not an oversight: design.md §3 places
+ * retention "after every successful refresh", which is Slice 6's
+ * `services/refreshFeeds.ts`. `subscribeToFeed.ts`'s own header comment
+ * carries the same statement from the ingestion side.
+ *
  * Pure selector for retention/pruning (design.md §3), applied per feed:
  * 1. Never prune a starred entry, or an unread entry within the
  *    never-prune window.

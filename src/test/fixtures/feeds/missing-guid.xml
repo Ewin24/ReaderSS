@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>No Guid Blog</title>
+<link>https://noguid.example</link>
+<description>Every item omits guid and id</description>
+<item>
+<title>First</title>
+<link>https://noguid.example/first</link>
+<pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
+<description>first entry, no guid</description>
+</item>
+<item>
+<title>Second</title>
+<link>https://noguid.example/second</link>
+<pubDate>Tue, 02 Jan 2024 10:00:00 GMT</pubDate>
+<description>second entry, no guid</description>
+</item>
+</channel>
+</rss>

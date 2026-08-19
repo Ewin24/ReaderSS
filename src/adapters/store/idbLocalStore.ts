@@ -71,6 +71,41 @@ export function createIdbLocalStore(db: ReaderSSDatabase): LocalStorePort {
       assertValidEntryState(entry);
       await db.put("entries", entry);
     },
+    async putFeedWithEntries(feed, entries) {
+      // One shared, explicitly-aborted transaction (Finding 1, Slice 5
+      // correction round) -- mirrors the pattern `deleteFeed` above already
+      // established for a multi-store write. Requests are queued
+      // synchronously (no `await` between them) so the transaction stays
+      // active for the whole batch; on any failure -- including a state
+      // guard rejecting one entry partway through -- the transaction is
+      // explicitly aborted so nothing written so far (the feed row or any
+      // already-queued entry) survives. Without the explicit `tx.abort()`,
+      // throwing alone would NOT roll back requests already queued into an
+      // active transaction.
+      const tx = db.transaction(["feeds", "entries"], "readwrite");
+      const feedsStore = tx.objectStore("feeds");
+      const entriesStore = tx.objectStore("entries");
+      // Every individual `.put()` request's own promise is tracked here too
+      // (not just `tx.done`): `idb` resolves/rejects each request
+      // independently, so an explicit `tx.abort()` below rejects ALL of
+      // them, not only the transaction-level promise. Not collecting and
+      // absorbing every one of them here leaves an unhandled rejection per
+      // already-queued request whenever a later entry in the batch fails.
+      const pending: Promise<unknown>[] = [];
+      try {
+        pending.push(feedsStore.put(feed));
+        for (const entry of entries) {
+          assertValidEntryState(entry);
+          pending.push(entriesStore.put(entry));
+        }
+        await Promise.all(pending);
+        await tx.done;
+      } catch (error) {
+        tx.abort();
+        await Promise.allSettled([...pending, tx.done]);
+        throw error;
+      }
+    },
     async deleteEntry(id) {
       await db.delete("entries", id);
     },

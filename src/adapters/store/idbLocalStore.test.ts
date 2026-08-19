@@ -193,6 +193,43 @@ describe("entries — starred/starredChangedAt write guard (Finding 4)", () => {
   });
 });
 
+describe("putFeedWithEntries — atomic feed+entries write (Finding 1)", () => {
+  it("persists the feed and every entry together in one transaction", async () => {
+    const f = feed({ id: "https://atomic.example/feed.xml" });
+    const e1 = entry({ id: "https://atomic.example/feed.xml:1", feedId: f.id });
+    const e2 = entry({ id: "https://atomic.example/feed.xml:2", feedId: f.id });
+
+    await store.putFeedWithEntries(f, [e1, e2]);
+
+    expect(await store.getFeed(f.id)).toEqual(f);
+    expect((await store.listEntriesByFeed(f.id)).map((e) => e.id).sort()).toEqual([e1.id, e2.id]);
+  });
+
+  it("rolls back the feed AND every already-queued entry when a later entry in the batch is invalid", async () => {
+    const f = feed({ id: "https://rollback.example/feed.xml" });
+    const validEntry = entry({ id: "https://rollback.example/feed.xml:1", feedId: f.id });
+    // Same invalid shape Finding 4's `assertValidEntryState` already rejects
+    // through `putEntry`: starred=1 with a null starredChangedAt.
+    const invalidEntry = entry({
+      id: "https://rollback.example/feed.xml:2",
+      feedId: f.id,
+      starred: 1,
+    });
+
+    await expect(store.putFeedWithEntries(f, [validEntry, invalidEntry])).rejects.toThrow(
+      /starredChangedAt/,
+    );
+
+    // Not a partial write: the feed row and the entry that WAS valid must
+    // both be rolled back along with the invalid one -- this is the
+    // atomicity the Slice 5 correction round added (Finding 1), replacing
+    // the previous independent-auto-committing `putFeed` + `putEntry` loop.
+    expect(await store.getFeed(f.id)).toBeUndefined();
+    expect(await store.getEntry(validEntry.id)).toBeUndefined();
+    expect(await store.getEntry(invalidEntry.id)).toBeUndefined();
+  });
+});
+
 describe("config — key/value store", () => {
   it("round-trips an arbitrary config value by key", async () => {
     await store.putConfigValue("ui", { layout: "split" });

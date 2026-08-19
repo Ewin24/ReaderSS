@@ -1,0 +1,22 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "JSON Blog",
+  "home_page_url": "https://example.io/",
+  "items": [
+    {
+      "id": "post-1",
+      "url": "https://example.io/post-1",
+      "title": "JSON Post",
+      "content_html": "<p>Full JSON content.</p>",
+      "summary": "A JSON summary",
+      "date_published": "2024-01-01T10:00:00Z"
+    },
+    {
+      "id": "post-2",
+      "url": "https://example.io/post-2",
+      "title": "Plain Text Post",
+      "content_text": "Just plain <text> with an angle bracket.",
+      "date_published": "2024-01-02T10:00:00Z"
+    }
+  ]
+}
