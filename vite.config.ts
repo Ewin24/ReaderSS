@@ -52,6 +52,14 @@ export default defineConfig({
           include: ["worker/**/*.test.ts"],
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "shared",
+          environment: "node",
+          include: ["shared/**/*.test.ts"],
+        },
+      },
     ],
   },
 });
