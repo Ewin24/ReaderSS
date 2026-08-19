@@ -4,6 +4,7 @@
  */
 import { render } from "preact";
 import { App } from "./app/App";
+import { ErrorBoundary } from "./app/ErrorBoundary";
 
 const rootElement = document.getElementById("app");
 
@@ -11,4 +12,9 @@ if (!rootElement) {
   throw new Error("Root element #app not found");
 }
 
-render(<App />, rootElement);
+render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+  rootElement,
+);

@@ -1,0 +1,86 @@
+/*
+ * App shell layout: mobile-first CSS Grid, plain CSS only (design.md §1,
+ * proposal "lightweight" non-negotiable). Below the desktop breakpoint the
+ * feed sidebar, entry list, and reading pane stack in a single column and
+ * only one of entry list / reading pane is rendered at a time (App.tsx
+ * owns that navigation state); at or above the breakpoint all three panes
+ * are visible side by side.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(0, 1fr);
+  min-height: 100vh;
+  max-width: 100vw;
+}
+
+.feed-sidebar,
+.entry-list,
+.reading-pane {
+  min-width: 0;
+  overflow-y: auto;
+  /* Real feed titles are sometimes a bare URL with no spaces to break on;
+   * without this, such a title overflows its fixed-width column and
+   * overlaps the neighbouring pane instead of wrapping. `overflow-wrap` is
+   * an inherited property, so this also covers titles/buttons nested
+   * inside each pane. jsdom does not perform layout, so no automated test
+   * exercises this - it is unverified except by manual review. */
+  overflow-wrap: anywhere;
+}
+
+.feed-sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.feed-sidebar__item {
+  width: 100%;
+  text-align: left;
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry-list-item__button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.entry-list-item--selected .entry-list-item__button {
+  font-weight: 600;
+}
+
+.reading-pane__article {
+  max-width: 65ch;
+}
+
+.empty-state {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    grid-template-columns: 220px 320px 1fr;
+    grid-template-rows: 1fr;
+  }
+}

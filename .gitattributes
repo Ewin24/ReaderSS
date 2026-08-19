@@ -1,0 +1,10 @@
+# Normalize line endings across platforms so the first contributor on a
+# different OS does not produce a whole-file diff on every checked-in file.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
