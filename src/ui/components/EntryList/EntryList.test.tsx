@@ -56,4 +56,24 @@ describe("EntryList", () => {
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
     expect(screen.getByText("This feed has no entries yet.")).toBeInTheDocument();
   });
+
+  it("threads onToggleRead/onToggleStar through to each row", () => {
+    const onToggleRead = vi.fn();
+    const onToggleStar = vi.fn();
+    render(
+      <EntryList
+        entries={entries}
+        selectedEntryId={null}
+        onSelectEntry={vi.fn()}
+        onToggleRead={onToggleRead}
+        onToggleStar={onToggleStar}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: 'Mark "First entry" as read' }));
+    expect(onToggleRead).toHaveBeenCalledWith("entry-1");
+
+    fireEvent.click(screen.getByRole("button", { name: 'Star "Second entry"' }));
+    expect(onToggleStar).toHaveBeenCalledWith("entry-2");
+  });
 });

@@ -29,14 +29,19 @@ export interface PrunableEntry {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Finding 2, Slice 5 correction round: this module has NO production call
- * site yet. It was built in Slice 2 with its own unit tests, but nothing on
- * the ingestion path (`services/subscribeToFeed.ts`) invokes it, so no
- * per-feed cap or quota guard is currently enforced anywhere. This is a
- * deliberate, stated deferral, not an oversight: design.md §3 places
- * retention "after every successful refresh", which is Slice 6's
- * `services/refreshFeeds.ts`. `subscribeToFeed.ts`'s own header comment
- * carries the same statement from the ingestion side.
+ * Finding 2, Slice 5 correction round -- resolved in Slice 6: this module's
+ * one production call site is now `services/refreshFeeds.ts`, run after
+ * every successful per-feed refresh (design.md §3's placement). The initial
+ * `subscribeToFeed.ts` ingestion path still does not call it (see that
+ * file's header comment) -- a large feed's very first fetch is unbounded
+ * until its next refresh.
+ *
+ * Tiers 1-3 below are exercised by `refreshFeeds.ts` with the default
+ * `quotaUsageRatio` (0), so tier 4's tightened cap is implemented and
+ * unit-tested here, but has no production caller yet: `refreshFeeds.ts`
+ * does not read `navigator.storage.estimate()` and pass a live ratio in.
+ * Wiring real quota-guard telemetry is a stated follow-up, not a claim this
+ * module makes about itself.
  *
  * Pure selector for retention/pruning (design.md §3), applied per feed:
  * 1. Never prune a starred entry, or an unread entry within the

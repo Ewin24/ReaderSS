@@ -8,6 +8,8 @@ const baseEntry = {
   feedTitle: "Hacker News",
   publishedAt: "2026-08-19T09:00:00.000Z",
   link: "https://example.com/indexeddb-in-practice",
+  read: 0 as const,
+  starred: 0 as const,
 };
 
 describe("ReadingPane", () => {
@@ -86,5 +88,71 @@ describe("ReadingPane", () => {
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
 
     expect(onBack).toHaveBeenCalled();
+  });
+
+  describe("mark-as-unread and star toggles (Amendment C)", () => {
+    it("does not render toggle controls when no toggle handler is provided (backward compatible)", () => {
+      render(
+        <ReadingPane
+          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 }}
+        />,
+      );
+
+      expect(screen.queryByRole("button", { name: /mark as unread/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^(star|unstar)/i })).not.toBeInTheDocument();
+    });
+
+    it("shows an explicit 'Mark as unread' action for a read entry, wired to onToggleRead", () => {
+      const onToggleRead = vi.fn();
+      render(
+        <ReadingPane
+          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 }}
+          onToggleRead={onToggleRead}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /mark as unread/i }));
+
+      expect(onToggleRead).toHaveBeenCalledWith(baseEntry.id);
+    });
+
+    it("does not show 'Mark as unread' for an already-unread entry", () => {
+      const onToggleRead = vi.fn();
+      render(
+        <ReadingPane
+          entry={{ ...baseEntry, summary: null, content: "Body", read: 0, starred: 0 }}
+          onToggleRead={onToggleRead}
+        />,
+      );
+
+      expect(screen.queryByRole("button", { name: /mark as unread/i })).not.toBeInTheDocument();
+    });
+
+    it("shows a star/unstar toggle wired to onToggleStar, with an accessible state", () => {
+      const onToggleStar = vi.fn();
+      render(
+        <ReadingPane
+          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 }}
+          onToggleStar={onToggleStar}
+        />,
+      );
+
+      const button = screen.getByRole("button", { name: "Star" });
+      expect(button).toHaveAttribute("aria-pressed", "false");
+
+      fireEvent.click(button);
+      expect(onToggleStar).toHaveBeenCalledWith(baseEntry.id);
+    });
+
+    it("labels the star toggle 'Unstar' with aria-pressed true for an already-starred entry", () => {
+      render(
+        <ReadingPane
+          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 1 }}
+          onToggleStar={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole("button", { name: "Unstar" })).toHaveAttribute("aria-pressed", "true");
+    });
   });
 });

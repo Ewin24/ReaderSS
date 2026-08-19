@@ -1,0 +1,182 @@
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
+import type { ClockPort } from "../../ports/ClockPort";
+import type { LocalStorePort } from "../../ports/LocalStorePort";
+import { createEntry, type Entry } from "../../domain/models/Entry";
+import { ServicesProvider } from "../../app/providers/ServicesContext";
+import { ReadingPaneContainer } from "./ReadingPaneContainer";
+import type { ReadingPaneEntry } from "../components/ReadingPane";
+
+function makeEntry(overrides: Partial<Entry> = {}): Entry {
+  return {
+    ...createEntry({
+      id: "entry-1",
+      feedId: "feed-1",
+      contentHash: "hash",
+      title: "IndexedDB in practice",
+      link: "https://example.com/1",
+      publishedAt: "2026-08-19T09:00:00.000Z",
+      fetchedAt: "2026-08-19T09:00:00.000Z",
+    }),
+    ...overrides,
+  };
+}
+
+function toReadingPaneEntry(entry: Entry): ReadingPaneEntry {
+  return {
+    id: entry.id,
+    title: entry.title,
+    feedTitle: "Hacker News",
+    publishedAt: entry.publishedAt,
+    link: entry.link,
+    summary: entry.summaryHtml,
+    content: entry.contentHtml,
+    read: entry.read,
+    starred: entry.starred,
+  };
+}
+
+function makeLocalStore(entry: Entry, overrides: Partial<LocalStorePort> = {}): LocalStorePort {
+  return {
+    getFeed: vi.fn(),
+    listFeeds: vi.fn(),
+    listFeedsByFolder: vi.fn(),
+    putFeed: vi.fn(),
+    putFeedWithEntries: vi.fn(),
+    deleteFeed: vi.fn(),
+    getEntry: vi.fn().mockResolvedValue(entry),
+    getEntryByFeedAndGuid: vi.fn(),
+    putEntry: vi.fn().mockResolvedValue(undefined),
+    deleteEntry: vi.fn(),
+    listEntriesByFeed: vi.fn(),
+    listEntriesByFeedPublished: vi.fn(),
+    listEntriesByPublished: vi.fn(),
+    listUnreadEntries: vi.fn(),
+    listStarredEntries: vi.fn(),
+    getConfigValue: vi.fn(),
+    putConfigValue: vi.fn(),
+    ...overrides,
+  } as unknown as LocalStorePort;
+}
+
+const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
+
+describe("ReadingPaneContainer", () => {
+  it("marks an unread entry read via toggleRead as soon as it opens (entry-reading spec, 'Opening an entry marks it read')", async () => {
+    const entry = makeEntry({ read: 0 });
+    const localStore = makeLocalStore(entry);
+    const onEntryChanged = vi.fn();
+
+    render(
+      <ServicesProvider services={{ localStore, clock }}>
+        <ReadingPaneContainer entry={toReadingPaneEntry(entry)} onEntryChanged={onEntryChanged} />
+      </ServicesProvider>,
+    );
+
+    await waitFor(() => {
+      expect(localStore.putEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ read: 1, readChangedAt: "2026-08-19T10:00:00.000Z" }),
+      );
+    });
+    expect(onEntryChanged).toHaveBeenCalledWith(entry.id);
+  });
+
+  it("does not call toggleRead again for an entry that is already read", async () => {
+    const entry = makeEntry({ read: 1, readChangedAt: "2026-08-01T00:00:00.000Z" });
+    const localStore = makeLocalStore(entry);
+
+    render(
+      <ServicesProvider services={{ localStore, clock }}>
+        <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
+      </ServicesProvider>,
+    );
+
+    // Give any stray effect a turn to run before asserting its absence.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(localStore.putEntry).not.toHaveBeenCalled();
+  });
+
+  it("wires the pane's 'Mark as unread' action to toggleRead", async () => {
+    const entry = makeEntry({ read: 1, readChangedAt: "2026-08-01T00:00:00.000Z" });
+    const localStore = makeLocalStore(entry);
+
+    render(
+      <ServicesProvider services={{ localStore, clock }}>
+        <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
+      </ServicesProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /mark as unread/i }));
+
+    await waitFor(() => {
+      expect(localStore.putEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ read: 0, readChangedAt: "2026-08-19T10:00:00.000Z" }),
+      );
+    });
+  });
+
+  it("calls onToggleError, not onEntryChanged, when the auto mark-as-read write fails on open (Finding 3, Slice 6 correction round)", async () => {
+    const entry = makeEntry({ read: 0 });
+    const localStore = makeLocalStore(entry, {
+      putEntry: vi.fn().mockRejectedValue(new Error("IndexedDB quota exceeded")),
+    });
+    const onEntryChanged = vi.fn();
+    const onToggleError = vi.fn();
+
+    render(
+      <ServicesProvider services={{ localStore, clock }}>
+        <ReadingPaneContainer
+          entry={toReadingPaneEntry(entry)}
+          onEntryChanged={onEntryChanged}
+          onToggleError={onToggleError}
+        />
+      </ServicesProvider>,
+    );
+
+    await waitFor(() => {
+      expect(onToggleError).toHaveBeenCalledWith(entry.id, "IndexedDB quota exceeded");
+    });
+    expect(onEntryChanged).not.toHaveBeenCalled();
+  });
+
+  it("calls onToggleError when the pane's star toggle write fails (Finding 3, Slice 6 correction round)", async () => {
+    const entry = makeEntry({ read: 1, starred: 0 });
+    const localStore = makeLocalStore(entry, {
+      putEntry: vi.fn().mockRejectedValue(new Error("IndexedDB quota exceeded")),
+    });
+    const onToggleError = vi.fn();
+
+    render(
+      <ServicesProvider services={{ localStore, clock }}>
+        <ReadingPaneContainer entry={toReadingPaneEntry(entry)} onToggleError={onToggleError} />
+      </ServicesProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Star" }));
+
+    await waitFor(() => {
+      expect(onToggleError).toHaveBeenCalledWith(entry.id, "IndexedDB quota exceeded");
+    });
+  });
+
+  it("wires the pane's star toggle to toggleStar", async () => {
+    const entry = makeEntry({ read: 1, starred: 0 });
+    const localStore = makeLocalStore(entry);
+
+    render(
+      <ServicesProvider services={{ localStore, clock }}>
+        <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
+      </ServicesProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Star" }));
+
+    await waitFor(() => {
+      expect(localStore.putEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ starred: 1, starredChangedAt: "2026-08-19T10:00:00.000Z" }),
+      );
+    });
+  });
+});

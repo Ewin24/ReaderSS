@@ -10,6 +10,8 @@ export interface ReadingPaneEntry {
   link: string;
   summary: string | null;
   content: string | null;
+  read: 0 | 1;
+  starred: 0 | 1;
 }
 
 export interface ReadingPaneProps {
@@ -18,6 +20,18 @@ export interface ReadingPaneProps {
   /** Focus target for narrow-viewport navigation (see App.tsx); optional so
    * standalone renders/tests are unaffected. */
   headingRef?: RefObject<HTMLHeadingElement>;
+  /**
+   * Explicit "Mark as unread" action in the pane header (entry-reading spec
+   * "Mark as unread is reachable as an explicit action", Amendment C) and
+   * the star/unstar toggle. Both optional, same rationale as
+   * `EntryListItem`'s toggle props: no handler means no control rendered,
+   * rather than a button wired to a no-op. Opening an entry marking it read
+   * is NOT this component's job -- that side effect belongs to whatever
+   * binds real data to it (`ReadingPaneContainer`), since this component
+   * stays presentational.
+   */
+  onToggleRead?: (entryId: string) => void;
+  onToggleStar?: (entryId: string) => void;
 }
 
 interface ReadingPaneContentProps {
@@ -67,13 +81,36 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
   );
 }
 
-export function ReadingPane({ entry, onBack, headingRef }: ReadingPaneProps) {
+export function ReadingPane({ entry, onBack, headingRef, onToggleRead, onToggleStar }: ReadingPaneProps) {
   return (
     <section class="reading-pane" aria-label="Reading pane">
       {onBack && (
         <button type="button" class="reading-pane__back" onClick={onBack}>
           Back to list
         </button>
+      )}
+      {entry && (onToggleRead || onToggleStar) && (
+        <div class="reading-pane__actions">
+          {onToggleRead && entry.read === 1 && (
+            <button
+              type="button"
+              class="reading-pane__toggle-read"
+              onClick={() => onToggleRead(entry.id)}
+            >
+              Mark as unread
+            </button>
+          )}
+          {onToggleStar && (
+            <button
+              type="button"
+              class="reading-pane__toggle-star"
+              aria-pressed={entry.starred === 1}
+              onClick={() => onToggleStar(entry.id)}
+            >
+              {entry.starred === 1 ? "Unstar" : "Star"}
+            </button>
+          )}
+        </div>
       )}
       {entry ? (
         <ReadingPaneContent entry={entry} headingRef={headingRef} />

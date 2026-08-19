@@ -69,6 +69,8 @@ export function App({ feeds = sampleFeeds, entries = sampleEntries }: AppProps =
         link: selectedEntry.link,
         summary: selectedEntry.summary,
         content: selectedEntry.content,
+        read: selectedEntry.read,
+        starred: selectedEntry.starred,
       }
     : null;
 

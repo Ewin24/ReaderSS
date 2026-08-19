@@ -14,14 +14,15 @@
  * A rejection from that call surfaces as the typed `persist-failed` result
  * below, not an escaping exception.
  *
- * RETENTION IS DELIBERATELY NOT ENFORCED HERE (Finding 2 of the Slice 5
- * correction round): `domain/retention/prunePolicy.selectPrunableEntries`
- * (built in Slice 2) has no call site in this service. design.md §3 places
- * retention "after every successful refresh", which is Slice 6's
- * `services/refreshFeeds.ts`, not the one-time initial subscribe here.
- * Until Slice 6 lands, a newly subscribed feed's entries are persisted
- * without any per-feed cap or quota guard -- a large feed's first fetch is
- * unbounded. This is a stated, deliberate deferral, not an oversight.
+ * RETENTION IS STILL DELIBERATELY NOT ENFORCED HERE (Finding 2 of the
+ * Slice 5 correction round; now confirmed unchanged by Slice 6):
+ * `domain/retention/prunePolicy.selectPrunableEntries` has no call site in
+ * this service, on purpose. design.md §3 places retention "after every
+ * successful refresh", and that is now wired -- into `services/refreshFeeds.ts`,
+ * not this one-time initial subscribe. A large feed's very first fetch (via
+ * this function) is still unbounded; the per-feed cap and quota guard first
+ * apply on that feed's next `refreshFeeds` pass. This remains a stated,
+ * deliberate scope boundary, not an oversight.
  */
 import { createFeed, type Feed } from "../domain/models/Feed";
 import { normalizeFeedUrl } from "../domain/url/normalizeFeedUrl";

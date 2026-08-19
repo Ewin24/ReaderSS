@@ -11,3 +11,4 @@ coverage/
 
 # Local tooling state (machine-specific paths/usernames); not project content.
 .atl/
+.codegraph/

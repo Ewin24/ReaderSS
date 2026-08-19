@@ -26,6 +26,20 @@ export default defineConfig({
     outDir: "dist",
   },
   test: {
+    // openspec/config.yaml's rules.verify.coverage_threshold (task 6.11):
+    // raised from 0 to 70 once domain/adapter modules existed to cover
+    // (design.md §7). Configured here too so `npm run test:coverage`
+    // actually FAILS below 70%, rather than the number being a
+    // documentation-only claim nothing enforces.
+    coverage: {
+      provider: "v8",
+      thresholds: {
+        statements: 70,
+        branches: 70,
+        functions: 70,
+        lines: 70,
+      },
+    },
     projects: [
       {
         extends: true,
