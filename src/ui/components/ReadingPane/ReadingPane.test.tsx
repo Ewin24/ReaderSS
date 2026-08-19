@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/preact";
-import { ReadingPane } from "./ReadingPane";
+import { ReadingPane, type ReadingPaneProps } from "./ReadingPane";
+import { SanitizerContext, type SanitizeFn } from "../SafeHtml";
 
 const baseEntry = {
   id: "entry-1",
@@ -12,25 +13,42 @@ const baseEntry = {
   starred: 0 as const,
 };
 
+/**
+ * Slice 10a wires the pane's body through `SafeHtml` (design.md §5), so
+ * `useSanitizer()` now throws unless a `SanitizerContext.Provider` is an
+ * ancestor. This test file is not re-testing sanitization correctness --
+ * that is `SafeHtml.test.tsx`'s job, with the real `DomPurifySanitizer` and
+ * its enumerated adversarial payload list -- so an identity function is
+ * enough here to prove `ReadingPane` actually routes content through
+ * `SafeHtml` rather than plain text interpolation.
+ */
+const identitySanitize: SanitizeFn = (html) => html;
+
+function renderReadingPane(props: ReadingPaneProps) {
+  return render(
+    <SanitizerContext.Provider value={identitySanitize}>
+      <ReadingPane {...props} />
+    </SanitizerContext.Provider>,
+  );
+}
+
 describe("ReadingPane", () => {
   it("is a landmark region", () => {
-    render(<ReadingPane entry={null} />);
+    renderReadingPane({ entry: null });
 
     expect(screen.getByRole("region", { name: "Reading pane" })).toBeInTheDocument();
   });
 
   it("shows an explicit empty state when no entry is selected", () => {
-    render(<ReadingPane entry={null} />);
+    renderReadingPane({ entry: null });
 
     expect(screen.getByText(/select an entry/i)).toBeInTheDocument();
   });
 
   it("renders full content and still links to the original article", () => {
-    render(
-      <ReadingPane
-        entry={{ ...baseEntry, summary: "A short summary.", content: "The full article body." }}
-      />,
-    );
+    renderReadingPane({
+      entry: { ...baseEntry, summary: "A short summary.", content: "The full article body." },
+    });
 
     expect(screen.getByRole("heading", { name: /indexeddb in practice/i })).toBeInTheDocument();
     expect(screen.getByText("The full article body.")).toBeInTheDocument();
@@ -41,9 +59,7 @@ describe("ReadingPane", () => {
   });
 
   it("labels summary-only content as partial, without an ellipsis, and links to the original", () => {
-    render(
-      <ReadingPane entry={{ ...baseEntry, summary: "A short summary.", content: null }} />,
-    );
+    renderReadingPane({ entry: { ...baseEntry, summary: "A short summary.", content: null } });
 
     expect(screen.getByText(/this is a summary/i)).toBeInTheDocument();
     expect(screen.getByText("A short summary.")).toBeInTheDocument();
@@ -54,7 +70,7 @@ describe("ReadingPane", () => {
   });
 
   it("states plainly when the feed provided no content and still offers the original link", () => {
-    render(<ReadingPane entry={{ ...baseEntry, summary: null, content: null }} />);
+    renderReadingPane({ entry: { ...baseEntry, summary: null, content: null } });
 
     expect(screen.getByText(/no content/i)).toBeInTheDocument();
     expect(
@@ -63,16 +79,14 @@ describe("ReadingPane", () => {
   });
 
   it("omits the original-article link when the feed-supplied link uses a disallowed scheme", () => {
-    render(
-      <ReadingPane
-        entry={{
-          ...baseEntry,
-          link: "javascript:alert(1)",
-          summary: null,
-          content: "Body",
-        }}
-      />,
-    );
+    renderReadingPane({
+      entry: {
+        ...baseEntry,
+        link: "javascript:alert(1)",
+        summary: null,
+        content: "Body",
+      },
+    });
 
     expect(
       screen.queryByRole("link", { name: /read the original article/i }),
@@ -81,22 +95,56 @@ describe("ReadingPane", () => {
 
   it("calls onBack when the back control is activated", () => {
     const onBack = vi.fn();
-    render(
-      <ReadingPane entry={{ ...baseEntry, summary: null, content: "Body" }} onBack={onBack} />,
-    );
+    renderReadingPane({
+      entry: { ...baseEntry, summary: null, content: "Body" },
+      onBack,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
 
     expect(onBack).toHaveBeenCalled();
   });
 
+  describe("HTML rendering via the SafeHtml choke point (Slice 10a)", () => {
+    it("renders HTML content as markup, not as an escaped literal string", () => {
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: "<strong>bold</strong> claim" },
+      });
+
+      const strong = screen.getByText("bold");
+      expect(strong.tagName).toBe("STRONG");
+      expect(screen.queryByText("<strong>bold</strong> claim")).not.toBeInTheDocument();
+    });
+
+    it("renders summary-only HTML as markup too, not just full content", () => {
+      renderReadingPane({
+        entry: { ...baseEntry, summary: "<em>partial</em> summary", content: null },
+      });
+
+      const em = screen.getByText("partial");
+      expect(em.tagName).toBe("EM");
+    });
+
+    it("refuses to render body content at all when no SanitizerContext.Provider is present, rather than falling back to unsanitized output", () => {
+      // SafeHtml's own `useSanitizer()` throws outside a provider (design.md
+      // §5's stated fail-closed behaviour) -- Preact logs that as a render
+      // error via console.error; suppressed here since the throw itself is
+      // the assertion.
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      expect(() =>
+        render(<ReadingPane entry={{ ...baseEntry, summary: null, content: "Body" }} />),
+      ).toThrow(/SanitizerContext/);
+
+      consoleError.mockRestore();
+    });
+  });
+
   describe("mark-as-unread and star toggles (Amendment C)", () => {
     it("does not render toggle controls when no toggle handler is provided (backward compatible)", () => {
-      render(
-        <ReadingPane
-          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 }}
-        />,
-      );
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 },
+      });
 
       expect(screen.queryByRole("button", { name: /mark as unread/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /^(star|unstar)/i })).not.toBeInTheDocument();
@@ -104,12 +152,10 @@ describe("ReadingPane", () => {
 
     it("shows an explicit 'Mark as unread' action for a read entry, wired to onToggleRead", () => {
       const onToggleRead = vi.fn();
-      render(
-        <ReadingPane
-          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 }}
-          onToggleRead={onToggleRead}
-        />,
-      );
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 },
+        onToggleRead,
+      });
 
       fireEvent.click(screen.getByRole("button", { name: /mark as unread/i }));
 
@@ -118,24 +164,20 @@ describe("ReadingPane", () => {
 
     it("does not show 'Mark as unread' for an already-unread entry", () => {
       const onToggleRead = vi.fn();
-      render(
-        <ReadingPane
-          entry={{ ...baseEntry, summary: null, content: "Body", read: 0, starred: 0 }}
-          onToggleRead={onToggleRead}
-        />,
-      );
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: "Body", read: 0, starred: 0 },
+        onToggleRead,
+      });
 
       expect(screen.queryByRole("button", { name: /mark as unread/i })).not.toBeInTheDocument();
     });
 
     it("shows a star/unstar toggle wired to onToggleStar, with an accessible state", () => {
       const onToggleStar = vi.fn();
-      render(
-        <ReadingPane
-          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 }}
-          onToggleStar={onToggleStar}
-        />,
-      );
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 },
+        onToggleStar,
+      });
 
       const button = screen.getByRole("button", { name: "Star" });
       expect(button).toHaveAttribute("aria-pressed", "false");
@@ -145,12 +187,10 @@ describe("ReadingPane", () => {
     });
 
     it("labels the star toggle 'Unstar' with aria-pressed true for an already-starred entry", () => {
-      render(
-        <ReadingPane
-          entry={{ ...baseEntry, summary: null, content: "Body", read: 1, starred: 1 }}
-          onToggleStar={vi.fn()}
-        />,
-      );
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: "Body", read: 1, starred: 1 },
+        onToggleStar: vi.fn(),
+      });
 
       expect(screen.getByRole("button", { name: "Unstar" })).toHaveAttribute("aria-pressed", "true");
     });

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
+import type { FeedSourcePort } from "../../ports/FeedSourcePort";
 import type { LocalStorePort } from "../../ports/LocalStorePort";
 import { createEntry, type Entry } from "../../domain/models/Entry";
 import { ServicesProvider } from "../../app/providers/ServicesContext";
@@ -60,6 +61,9 @@ function makeLocalStore(entry: Entry, overrides: Partial<LocalStorePort> = {}): 
 }
 
 const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
+// Services was extended with `feedSource` in Slice 10a; this container
+// doesn't use it, so a bare stub is enough to satisfy the `Services` type.
+const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
 
 describe("ReadingPaneContainer", () => {
   it("marks an unread entry read via toggleRead as soon as it opens (entry-reading spec, 'Opening an entry marks it read')", async () => {
@@ -68,7 +72,7 @@ describe("ReadingPaneContainer", () => {
     const onEntryChanged = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock }}>
+      <ServicesProvider services={{ localStore, clock, feedSource }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} onEntryChanged={onEntryChanged} />
       </ServicesProvider>,
     );
@@ -86,7 +90,7 @@ describe("ReadingPaneContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock }}>
+      <ServicesProvider services={{ localStore, clock, feedSource }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
       </ServicesProvider>,
     );
@@ -103,7 +107,7 @@ describe("ReadingPaneContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock }}>
+      <ServicesProvider services={{ localStore, clock, feedSource }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
       </ServicesProvider>,
     );
@@ -126,7 +130,7 @@ describe("ReadingPaneContainer", () => {
     const onToggleError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock }}>
+      <ServicesProvider services={{ localStore, clock, feedSource }}>
         <ReadingPaneContainer
           entry={toReadingPaneEntry(entry)}
           onEntryChanged={onEntryChanged}
@@ -149,7 +153,7 @@ describe("ReadingPaneContainer", () => {
     const onToggleError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock }}>
+      <ServicesProvider services={{ localStore, clock, feedSource }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} onToggleError={onToggleError} />
       </ServicesProvider>,
     );
@@ -166,7 +170,7 @@ describe("ReadingPaneContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock }}>
+      <ServicesProvider services={{ localStore, clock, feedSource }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
       </ServicesProvider>,
     );

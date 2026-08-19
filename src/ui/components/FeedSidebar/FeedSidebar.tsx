@@ -2,6 +2,11 @@ export interface FeedSidebarItem {
   id: string;
   title: string;
   folder: string | null;
+  /** feed-subscriptions spec, "List feeds with metadata" (Slice 10a).
+   * Computed by whoever supplies this list -- `FeedSidebarContainer` for
+   * the real, store-backed sidebar; `App.tsx` for its test-only override
+   * path -- never by this presentational component itself. */
+  unreadCount: number;
 }
 
 export interface FeedSidebarProps {
@@ -23,9 +28,17 @@ export function FeedSidebar({ feeds, selectedFeedId, onSelectFeed }: FeedSidebar
                 type="button"
                 class="feed-sidebar__item"
                 aria-current={feed.id === selectedFeedId ? "true" : undefined}
+                aria-label={`${feed.title}, ${feed.unreadCount} unread`}
                 onClick={() => onSelectFeed(feed.id)}
               >
-                {feed.title}
+                <span class="feed-sidebar__item-title" aria-hidden="true">
+                  {feed.title}
+                </span>
+                {feed.unreadCount > 0 && (
+                  <span class="feed-sidebar__item-count" aria-hidden="true">
+                    {feed.unreadCount}
+                  </span>
+                )}
               </button>
             </li>
           ))}

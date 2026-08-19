@@ -10,11 +10,16 @@
 import { createContext, type ComponentChildren } from "preact";
 import { useContext } from "preact/hooks";
 import type { ClockPort } from "../../ports/ClockPort";
+import type { FeedSourcePort } from "../../ports/FeedSourcePort";
 import type { LocalStorePort } from "../../ports/LocalStorePort";
 
 export interface Services {
   readonly localStore: LocalStorePort;
   readonly clock: ClockPort;
+  /** Added in Slice 10a for the composition root (`buildServices.ts`); the
+   * first real production callers are Slice 10b's add-feed and refresh
+   * containers, not yet built. */
+  readonly feedSource: FeedSourcePort;
 }
 
 const ServicesContext = createContext<Services | null>(null);

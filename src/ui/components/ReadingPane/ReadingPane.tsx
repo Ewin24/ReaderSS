@@ -1,6 +1,8 @@
 import type { RefObject } from "preact";
 import { formatPublished } from "../formatPublished";
 import { toSafeHref } from "../../../domain/url/safeUrl";
+import { shortHash } from "../../../domain/identity/hash";
+import { SafeHtml } from "../SafeHtml";
 
 export interface ReadingPaneEntry {
   id: string;
@@ -66,7 +68,20 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
       {hasNoContent && (
         <p class="reading-pane__notice">This feed provided no content for this entry.</p>
       )}
-      {body && <p class="reading-pane__body">{body}</p>}
+      {body && (
+        // The single enforced sanitization choke point (design.md §5):
+        // `body` is raw, feed-supplied HTML and must never reach the DOM
+        // through plain text interpolation (Slice 6's risk-lens finding --
+        // Preact escapes `{body}`, so feed markup showed as literal source
+        // text instead of rendering). `cacheKey` is derived here, inside
+        // this component, rather than plumbed through `ReadingPaneEntry` as
+        // a separate `contentHash` field: it is entirely a function of
+        // `entry.id` plus the exact string being rendered, so hashing it
+        // locally keeps the sanitizer's LRU memo correctly invalidated
+        // (design.md §5: keyed on `entryId + contentHash`) without widening
+        // this component's props or every caller that builds one.
+        <SafeHtml html={body} cacheKey={`${entry.id}:${shortHash(body)}`} />
+      )}
       {safeLink && (
         <a
           class="reading-pane__original-link"

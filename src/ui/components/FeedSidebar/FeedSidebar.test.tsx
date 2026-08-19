@@ -3,8 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/preact";
 import { FeedSidebar } from "./FeedSidebar";
 
 const feeds = [
-  { id: "feed-1", title: "Hacker News", folder: null },
-  { id: "feed-2", title: "Ars Technica", folder: "Tech" },
+  { id: "feed-1", title: "Hacker News", folder: null, unreadCount: 0 },
+  { id: "feed-2", title: "Ars Technica", folder: "Tech", unreadCount: 0 },
 ];
 
 describe("FeedSidebar", () => {
@@ -53,5 +53,27 @@ describe("FeedSidebar", () => {
     expect(screen.getByRole("navigation", { name: "Feeds" })).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getByText(/no feeds yet/i)).toBeInTheDocument();
+  });
+
+  describe("unread counts (Slice 10a, feed-subscriptions spec 'List feeds with metadata')", () => {
+    it("displays each feed's unread count", () => {
+      render(
+        <FeedSidebar
+          feeds={[
+            { id: "feed-1", title: "Hacker News", folder: null, unreadCount: 3 },
+            { id: "feed-2", title: "Ars Technica", folder: "Tech", unreadCount: 0 },
+          ]}
+          selectedFeedId={null}
+          onSelectFeed={vi.fn()}
+        />,
+      );
+
+      expect(
+        screen.getByRole("button", { name: /hacker news.*3 unread/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /ars technica.*0 unread/i }),
+      ).toBeInTheDocument();
+    });
   });
 });

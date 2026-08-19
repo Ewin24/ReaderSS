@@ -1,9 +1,13 @@
 /**
- * Fixture-shaped view types for the Slice 3 app shell. `AppEntry` is
+ * View-model types for `App.tsx`'s `AppProps` test-only override (Slice 3;
+ * still current as of Slice 10a, not superseded). `AppEntry` is
  * intentionally flat (feed-scoped, denormalized at render time by App.tsx)
  * so the presentational leaf components never need to know about feeds.
- * Slices 4-9 replace these with data sourced from services/ports; the shape
- * is kept close to `domain/models` so that wiring is additive, not a rewrite.
+ * Production (`main.tsx`) never constructs these directly -- `App.tsx`
+ * builds them from `services.localStore`'s real `Feed`/`Entry` domain
+ * objects when no override is supplied. The Slice 3 fixture DATA that used
+ * to default to these shapes (`src/app/fixtures.ts`) was retired in Slice
+ * 10a; these type definitions were not, since `AppProps` still uses them.
  */
 export interface AppFeed {
   id: string;

@@ -1,30 +1,102 @@
 /**
- * App shell layout (Slice 3). Fixture-driven presentational wiring only:
- * feeds/entries are passed in (defaulting to demo fixtures) and rendered
- * through the four presentational components. Real data wiring via
- * services/containers lands in Slices 4-9; this component's shape does not
- * change, only where `feeds`/`entries` come from.
+ * App shell layout and composition (Slice 3 built the fixture-driven shell;
+ * Slice 10a wires it to real data). `feeds`/`entries` stay as an OPTIONAL
+ * test-only override (`AppProps`) -- when supplied, `App` renders exactly
+ * that data synchronously, which is what every pre-10a layout/focus/
+ * selection/empty-state test still exercises. Production (`main.tsx`) never
+ * passes them: with no override, `App` loads feeds and the selected feed's
+ * entries from `services.localStore` on mount and on selection change.
+ *
+ * Regardless of data source, `EntryListContainer`/`ReadingPaneContainer`
+ * (Slice 6, never mounted until now) render the list and reading pane, so
+ * every read/unread and star/unstar toggle always routes through the real
+ * `toggleRead`/`toggleStar` services -- even in override/test mode, which is
+ * why every `App` test now needs a `ServicesProvider` ancestor.
  */
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { FeedSidebar } from "../ui/components/FeedSidebar";
-import { EntryList } from "../ui/components/EntryList";
-import { ReadingPane, type ReadingPaneEntry } from "../ui/components/ReadingPane";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { FeedSidebar, type FeedSidebarItem } from "../ui/components/FeedSidebar";
+import { EntryListContainer } from "../ui/containers/EntryListContainer";
+import { ReadingPaneContainer } from "../ui/containers/ReadingPaneContainer";
+import { FeedSidebarContainer } from "../ui/containers/FeedSidebarContainer";
+import type { ReadingPaneEntry } from "../ui/components/ReadingPane";
 import { DESKTOP_QUERY, useMediaQuery } from "./useMediaQuery";
-import { sampleEntries, sampleFeeds } from "./fixtures";
+import { useServices } from "./providers/ServicesContext";
 import type { AppEntry, AppFeed } from "./types";
 import "../styles/grid.css";
 
 export interface AppProps {
+  /** Test-only override: when supplied, `App` renders exactly this data
+   * instead of loading from `services.localStore`. Production callers
+   * (`main.tsx`) never pass these -- the Slice 3 fixture defaults
+   * (`src/app/fixtures.ts`) are no longer the runtime default. */
   feeds?: AppFeed[];
   entries?: AppEntry[];
 }
 
 type MobileView = "list" | "reading";
 
-export function App({ feeds = sampleFeeds, entries = sampleEntries }: AppProps = {}) {
+interface LoadState {
+  readonly status: "loading" | "loaded" | "error";
+  readonly message?: string;
+}
+
+const LOADED: LoadState = { status: "loaded" };
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function toAppFeed(feed: { id: string; title: string; folder: string | null }): AppFeed {
+  return { id: feed.id, title: feed.title, folder: feed.folder };
+}
+
+function toAppEntry(entry: {
+  id: string;
+  feedId: string;
+  title: string;
+  publishedAt: string;
+  read: 0 | 1;
+  starred: 0 | 1;
+  link: string;
+  summaryHtml: string | null;
+  contentHtml: string | null;
+}): AppEntry {
+  return {
+    id: entry.id,
+    feedId: entry.feedId,
+    title: entry.title,
+    publishedAt: entry.publishedAt,
+    read: entry.read,
+    starred: entry.starred,
+    link: entry.link,
+    summary: entry.summaryHtml,
+    content: entry.contentHtml,
+  };
+}
+
+export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps = {}) {
+  const services = useServices();
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
+  const usingOverride = feedsOverride !== undefined;
+
+  const [storeFeeds, setStoreFeeds] = useState<AppFeed[]>([]);
+  const [storeEntries, setStoreEntries] = useState<AppEntry[]>([]);
+  const [feedsState, setFeedsState] = useState<LoadState>(usingOverride ? LOADED : { status: "loading" });
+  const [entriesState, setEntriesState] = useState<LoadState>(LOADED);
+  const [toggleErrorMessage, setToggleErrorMessage] = useState<string | null>(null);
+  // Bumped whenever a store-driven entry changes (read/unread, star/unstar),
+  // so `FeedSidebarContainer` re-fetches its unread counts. Finding 2, Slice
+  // 10a correction round: without this, the sidebar badge only reflected
+  // reality at mount, going stale for the rest of the session -- violating
+  // entry-reading spec's "the owning feed's unread count MUST decrease by
+  // one on open / increase by one on mark-unread".
+  const [sidebarRefreshSignal, setSidebarRefreshSignal] = useState(0);
+
+  const feeds = usingOverride ? (feedsOverride as AppFeed[]) : storeFeeds;
+  const allEntries = usingOverride ? (entriesOverride as AppEntry[]) : storeEntries;
+
   const [selectedFeedId, setSelectedFeedId] = useState<string | null>(
-    feeds[0]?.id ?? null,
+    usingOverride ? (feedsOverride as AppFeed[])[0]?.id ?? null : null,
   );
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<MobileView>("list");
@@ -32,9 +104,75 @@ export function App({ feeds = sampleFeeds, entries = sampleEntries }: AppProps =
   const entryListRef = useRef<HTMLUListElement>(null);
   const previousMobileViewRef = useRef<MobileView>(mobileView);
 
+  // Feeds load (store-driven mode only): runs once on mount. The override
+  // path never touches the store for its OWN data, but toggle clicks still
+  // route through the real services regardless (see the container wiring
+  // below), which is why every test still needs a ServicesProvider.
+  useEffect(() => {
+    if (usingOverride) return;
+    let cancelled = false;
+    setFeedsState({ status: "loading" });
+    services.localStore
+      .listFeeds()
+      .then((loadedFeeds) => {
+        if (cancelled) return;
+        setStoreFeeds(loadedFeeds.map(toAppFeed));
+        setFeedsState(LOADED);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setFeedsState({ status: "error", message: describeError(error) });
+      });
+    return () => {
+      cancelled = true;
+    };
+    // `services` is intentionally not a dependency: it comes from
+    // `ServicesContext` and is expected to be a stable object identity for
+    // the lifetime of the provider (constructed once by `buildServices()`
+    // in `main.tsx`).
+  }, [usingOverride]);
+
+  // Default feed selection once the store's feed list has loaded (mirrors
+  // the override path's lazy-initializer default of "first feed").
+  useEffect(() => {
+    if (usingOverride || feedsState.status !== "loaded") return;
+    setSelectedFeedId((current) => current ?? storeFeeds[0]?.id ?? null);
+  }, [usingOverride, feedsState.status, storeFeeds]);
+
+  // Entries load for the selected feed (store-driven mode only): re-runs on
+  // every selection change.
+  useEffect(() => {
+    if (usingOverride) return;
+    if (selectedFeedId === null) {
+      setStoreEntries([]);
+      setEntriesState(LOADED);
+      return;
+    }
+    let cancelled = false;
+    setEntriesState({ status: "loading" });
+    services.localStore
+      .listEntriesByFeedPublished(selectedFeedId)
+      .then((loadedEntries) => {
+        if (cancelled) return;
+        setStoreEntries(loadedEntries.map(toAppEntry));
+        setEntriesState(LOADED);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setEntriesState({ status: "error", message: describeError(error) });
+      });
+    return () => {
+      cancelled = true;
+    };
+    // See the feeds-load effect above for why `services` is not listed.
+  }, [usingOverride, selectedFeedId]);
+
   const feedEntries = useMemo(
-    () => entries.filter((entry) => entry.feedId === selectedFeedId),
-    [entries, selectedFeedId],
+    () =>
+      usingOverride
+        ? allEntries.filter((entry) => entry.feedId === selectedFeedId)
+        : allEntries,
+    [allEntries, selectedFeedId, usingOverride],
   );
 
   const selectedEntry = useMemo(
@@ -58,6 +196,22 @@ export function App({ feeds = sampleFeeds, entries = sampleEntries }: AppProps =
         starred: entry.starred,
       })),
     [feedEntries, selectedFeed],
+  );
+
+  // Only used in override/test mode: the store-driven sidebar renders
+  // through `FeedSidebarContainer` below instead, which loads its own feed
+  // list and unread counts directly from `services.localStore` (task
+  // 10.10/10.11).
+  const overrideFeedSidebarItems: FeedSidebarItem[] = useMemo(
+    () =>
+      feeds.map((feed) => ({
+        id: feed.id,
+        title: feed.title,
+        folder: feed.folder,
+        unreadCount: allEntries.filter((entry) => entry.feedId === feed.id && entry.read === 0)
+          .length,
+      })),
+    [feeds, allEntries],
   );
 
   const readingPaneEntry: ReadingPaneEntry | null = selectedEntry
@@ -89,6 +243,31 @@ export function App({ feeds = sampleFeeds, entries = sampleEntries }: AppProps =
     setMobileView("list");
   }
 
+  // Refreshes one entry from the store after its toggle write settles, so
+  // the store-driven list/pane reflect the new read/starred state. A no-op
+  // in override mode: `allEntries` there is a static test prop, not state
+  // this component owns, so there is nothing to update in place -- the
+  // click still reaches the real service and `putEntry` (asserted by the
+  // container-level tests), it just does not re-render the override's
+  // fixed props.
+  const handleEntryChanged = useCallback(
+    (entryId: string) => {
+      if (usingOverride) return;
+      services.localStore.getEntry(entryId).then((entry) => {
+        if (entry === undefined) return;
+        setStoreEntries((current) =>
+          current.map((existing) => (existing.id === entryId ? toAppEntry(entry) : existing)),
+        );
+        setSidebarRefreshSignal((current) => current + 1);
+      });
+    },
+    [usingOverride, services],
+  );
+
+  const handleToggleError = useCallback((_entryId: string, message: string) => {
+    setToggleErrorMessage(message);
+  }, []);
+
   // On a narrow viewport, only one of EntryList/ReadingPane is mounted at a
   // time (design.md's responsive-layout requirement), and unmounting the
   // focused element resets browser focus to <body> with no recovery - a
@@ -116,31 +295,80 @@ export function App({ feeds = sampleFeeds, entries = sampleEntries }: AppProps =
   const showList = isDesktop || mobileView === "list";
   const showReadingPane = isDesktop || mobileView === "reading";
 
+  const entryListArea = (() => {
+    if (!usingOverride && feedsState.status === "loading") {
+      return (
+        <p class="entry-list entry-list--loading" aria-live="polite">
+          Loading your feeds…
+        </p>
+      );
+    }
+    if (!usingOverride && feedsState.status === "error") {
+      return (
+        <p class="entry-list entry-list--error" role="alert">
+          Could not load your feeds from local storage. {feedsState.message}
+        </p>
+      );
+    }
+    if (!usingOverride && selectedFeedId !== null && entriesState.status === "loading") {
+      return (
+        <p class="entry-list entry-list--loading" aria-live="polite">
+          Loading entries…
+        </p>
+      );
+    }
+    if (!usingOverride && selectedFeedId !== null && entriesState.status === "error") {
+      return (
+        <p class="entry-list entry-list--error" role="alert">
+          Could not load this feed's entries from local storage. {entriesState.message}
+        </p>
+      );
+    }
+    return (
+      <EntryListContainer
+        entries={entryListItems}
+        selectedEntryId={selectedEntryId}
+        onSelectEntry={handleSelectEntry}
+        listRef={entryListRef}
+        emptyMessage={
+          selectedFeedId === null
+            ? "Add a feed to see its entries."
+            : "This feed has no entries yet."
+        }
+        onEntryChanged={handleEntryChanged}
+        onToggleError={handleToggleError}
+      />
+    );
+  })();
+
   return (
     <div class="app-shell">
-      <FeedSidebar
-        feeds={feeds}
-        selectedFeedId={selectedFeedId}
-        onSelectFeed={handleSelectFeed}
-      />
-      {showList && (
-        <EntryList
-          entries={entryListItems}
-          selectedEntryId={selectedEntryId}
-          onSelectEntry={handleSelectEntry}
-          listRef={entryListRef}
-          emptyMessage={
-            selectedFeedId === null
-              ? "Add a feed to see its entries."
-              : "This feed has no entries yet."
-          }
+      {toggleErrorMessage && (
+        <p class="app-shell__toggle-error" role="alert">
+          {toggleErrorMessage}
+        </p>
+      )}
+      {usingOverride ? (
+        <FeedSidebar
+          feeds={overrideFeedSidebarItems}
+          selectedFeedId={selectedFeedId}
+          onSelectFeed={handleSelectFeed}
+        />
+      ) : (
+        <FeedSidebarContainer
+          selectedFeedId={selectedFeedId}
+          onSelectFeed={handleSelectFeed}
+          refreshSignal={sidebarRefreshSignal}
         />
       )}
+      {showList && entryListArea}
       {showReadingPane && (
-        <ReadingPane
+        <ReadingPaneContainer
           entry={readingPaneEntry}
           onBack={!isDesktop ? handleBack : undefined}
           headingRef={readingHeadingRef}
+          onEntryChanged={handleEntryChanged}
+          onToggleError={handleToggleError}
         />
       )}
     </div>
