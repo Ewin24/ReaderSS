@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
+import { fireEvent, render, screen, waitFor, act } from "@testing-library/preact";
 import { App } from "./App";
 import type { AppEntry, AppFeed } from "./types";
 import type { ClockPort } from "../ports/ClockPort";
@@ -9,6 +9,7 @@ import type { LocalStorePort } from "../ports/LocalStorePort";
 import { createEntry, type Entry } from "../domain/models/Entry";
 import { createFeed, type Feed } from "../domain/models/Feed";
 import { ServicesProvider } from "./providers/ServicesContext";
+import { SettingsProvider } from "./providers/SettingsProvider";
 import { SanitizerContext, type SanitizeFn } from "../ui/components/SafeHtml";
 
 // `App` assumes a `SanitizerContext.Provider` ancestor -- `main.tsx` supplies
@@ -125,9 +126,11 @@ function renderApp(
 ) {
   return render(
     <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
-      <SanitizerContext.Provider value={identitySanitize}>
-        <App {...props} />
-      </SanitizerContext.Provider>
+      <SettingsProvider>
+        <SanitizerContext.Provider value={identitySanitize}>
+          <App {...props} />
+        </SanitizerContext.Provider>
+      </SettingsProvider>
     </ServicesProvider>,
   );
 }
@@ -286,9 +289,11 @@ describe("App", () => {
 
       render(
         <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -322,9 +327,11 @@ describe("App", () => {
 
       render(
         <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -348,9 +355,11 @@ describe("App", () => {
 
       render(
         <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -370,9 +379,11 @@ describe("App", () => {
 
       render(
         <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -419,9 +430,11 @@ describe("App", () => {
 
       render(
         <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -484,9 +497,11 @@ describe("App", () => {
 
       render(
         <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -519,6 +534,143 @@ describe("App", () => {
       ).toBeInTheDocument();
       expect(localStore.putEntry).toHaveBeenCalledTimes(1);
       expect(currentEntry.read).toBe(0);
+    });
+  });
+
+  describe("settings panel", () => {
+    it("shows the settings row with controls when the settings toggle is opened, and hides it when closed", () => {
+      stubMatchMedia(true);
+      renderApp({ feeds, entries });
+
+      expect(screen.queryByRole("region", { name: /visual settings/i })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /^settings$/i }));
+      expect(screen.getByRole("region", { name: /visual settings/i })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: /^auto$/i })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /^close settings$/i }));
+      expect(screen.queryByRole("region", { name: /visual settings/i })).not.toBeInTheDocument();
+    });
+
+    it("changing a control persists config/visual through the provider round-trip", async () => {
+      stubMatchMedia(true);
+      const localStore = makeLocalStore(feeds.map(toDomainFeed), entries.map(toDomainEntry));
+      renderApp({ feeds, entries }, localStore);
+
+      fireEvent.click(screen.getByRole("button", { name: /^settings$/i }));
+      fireEvent.click(screen.getByRole("radio", { name: /^paginated$/i }));
+
+      await waitFor(() =>
+        expect(localStore.putConfigValue).toHaveBeenCalledWith(
+          "visual",
+          expect.objectContaining({ navMode: "paginated" }),
+        ),
+      );
+    });
+  });
+
+  describe("pagination (navMode=paginated, client-side slicing over already-loaded entries)", () => {
+    // Deterministically flush ALL pending Preact effects. A single
+    // `act` + one microtask is not always enough: the settings-load render
+    // queues a reset-on-navMode-change effect whose execution can otherwise
+    // race with (and clobber) the test's scroll. Several event-loop turns
+    // guarantee every queued effect has run and settled before we interact.
+    async function flushEffects() {
+      for (let i = 0; i < 5; i += 1) {
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
+      }
+    }
+
+    function makeManyEntries(count: number, feedId = "feed-1"): AppEntry[] {
+      return Array.from({ length: count }, (_, i) => ({
+        id: `entry-${i + 1}`,
+        feedId,
+        title: `Article ${i + 1}`,
+        publishedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+        read: 0,
+        starred: 0,
+        link: `https://example.com/${i + 1}`,
+        summary: null,
+        content: null,
+      }));
+    }
+
+    function localStoreWithNavMode(navMode: "auto" | "paginated", many: AppEntry[]) {
+      const store = makeLocalStore(feeds.map(toDomainFeed), many.map(toDomainEntry));
+      store.getConfigValue = vi.fn(async <T,>(key: string): Promise<T | undefined> => {
+        if (key === "visual") return { navMode } as T;
+        return undefined;
+      }) as LocalStorePort["getConfigValue"];
+      return store;
+    }
+
+    it("shows only the first page slice when paginated", async () => {
+      stubMatchMedia(true);
+      const many = makeManyEntries(25);
+      renderApp({ feeds, entries: many }, localStoreWithNavMode("paginated", many));
+
+      expect(await screen.findByRole("button", { name: /^article 1, /i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^article 20, /i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^article 21, /i })).not.toBeInTheDocument();
+      expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+    });
+
+    it("advances to the next slice of already-loaded entries at the viewport end, with no new store query", async () => {
+      stubMatchMedia(true);
+      const many = makeManyEntries(25);
+      const localStore = localStoreWithNavMode("paginated", many);
+      renderApp({ feeds, entries: many }, localStore);
+
+      const list = await screen.findByRole("list", { name: "Entries" });
+      // Wait until pagination is active (settings loaded) so onScroll is attached.
+      await screen.findByText("Page 1 of 2");
+      // Flush the pending reset effect (queued when navMode flipped to
+      // paginated on load) so it cannot clobber the scroll's page advance.
+      await flushEffects();
+      Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
+      Object.defineProperty(list, "scrollHeight", { value: 100, configurable: true });
+      list.scrollTop = 50;
+      fireEvent.scroll(list);
+
+      expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^article 21, /i })).toBeInTheDocument();
+      // Slicing is client-side over already-loaded entries: no store query ran.
+      expect(localStore.listEntriesByFeedPublished).not.toHaveBeenCalled();
+    });
+
+    it("resets to page 1 when the entries change", async () => {
+      stubMatchMedia(true);
+      const many = makeManyEntries(25);
+      const first = renderApp({ feeds, entries: many }, localStoreWithNavMode("paginated", many));
+
+      const list = await screen.findByRole("list", { name: "Entries" });
+      await screen.findByText("Page 1 of 2");
+      await flushEffects();
+      Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
+      Object.defineProperty(list, "scrollHeight", { value: 100, configurable: true });
+      list.scrollTop = 50;
+      fireEvent.scroll(list);
+      expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
+      first.unmount();
+
+      // Re-render with a different (smaller) entry set → page resets to 1.
+      const smaller = makeManyEntries(5);
+      const localStore = localStoreWithNavMode("paginated", smaller);
+      renderApp({ feeds, entries: smaller }, localStore);
+
+      expect(await screen.findByText("Page 1 of 1")).toBeInTheDocument();
+    });
+
+    it("shows the full list with no slicing when navMode is auto", async () => {
+      stubMatchMedia(true);
+      const many = makeManyEntries(25);
+      renderApp({ feeds, entries: many }, localStoreWithNavMode("auto", many));
+
+      expect(await screen.findByRole("button", { name: /^article 1, /i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^article 25, /i })).toBeInTheDocument();
+      expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
     });
   });
 
@@ -617,9 +769,11 @@ describe("App", () => {
         <ServicesProvider
           services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
         >
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -683,9 +837,11 @@ describe("App", () => {
         <ServicesProvider
           services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
         >
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
@@ -707,9 +863,11 @@ describe("App", () => {
         <ServicesProvider
           services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
         >
-          <SanitizerContext.Provider value={identitySanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={identitySanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>,
       );
 
