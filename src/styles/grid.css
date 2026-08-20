@@ -19,12 +19,68 @@ body {
   overflow-x: hidden;
 }
 
+/*
+ * Layout strategy (fixed after the "off-screen reading pane" defect: the
+ * Slice 10b actions bar was added as a direct child of `.app-shell` with no
+ * grid placement rule, so it silently fell into the implicit grid ahead of
+ * the three panes, pushing every pane one slot over and the reading pane
+ * below the fold in a narrow column).
+ *
+ * `.app-shell` uses named `grid-template-areas` rather than the implicit
+ * grid. Every direct child MUST be assigned to a named area -- there is no
+ * "fell through the cracks" placement left available, which is exactly how
+ * the previous bug happened. Two kinds of area:
+ *   - Non-pane children ("toggle-error", "actions", and any later addition
+ *     such as an offline banner, update prompt, or first-run setup screen)
+ *     get their own named row and span every column, so they can never
+ *     collide with a pane's column.
+ *   - The three panes ("sidebar", "list", "pane") share the layout's last
+ *     row, one column each on a wide viewport.
+ *
+ * To add another non-pane child: add its area name to BOTH
+ * `grid-template-areas` blocks below (mobile and desktop), add a
+ * `grid-area: <name>;` rule for its class, and add that class to
+ * `grid.test.ts`'s `KNOWN_NON_PANE_CHILD_CLASSES` guard list -- in that
+ * order, so the guard's RED failure proves the omission before the fix
+ * lands. This is a few explicit lines, not a re-derivation of the whole
+ * layout, which is why named areas were chosen over a generic
+ * `grid-auto-rows` rule (a single sizing function cannot tell a banner's
+ * row apart from a pane's row).
+ */
 .app-shell {
   display: grid;
   grid-template-columns: 1fr;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr 1fr;
+  grid-template-areas:
+    "toggle-error"
+    "actions"
+    "sidebar"
+    "pane";
   min-height: 100vh;
   max-width: 100vw;
+}
+
+.app-shell__toggle-error {
+  grid-area: toggle-error;
+}
+
+.app-shell__actions {
+  grid-area: actions;
+}
+
+.feed-sidebar {
+  grid-area: sidebar;
+}
+
+/* `.entry-list` and `.reading-pane` share the "pane" area below the desktop
+ * breakpoint: `App.tsx` only ever mounts one of them at a time on a narrow
+ * viewport (`showList`/`showReadingPane` are mutually exclusive there), so
+ * assigning them the same area never produces an actual overlap. The
+ * desktop media query below gives `.entry-list` its own "list" area once
+ * both panes are mounted together. */
+.entry-list,
+.reading-pane {
+  grid-area: pane;
 }
 
 .feed-sidebar,
@@ -81,6 +137,18 @@ body {
 @media (min-width: 768px) {
   .app-shell {
     grid-template-columns: 220px 320px 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "toggle-error toggle-error toggle-error"
+      "actions actions actions"
+      "sidebar list pane";
+  }
+
+  /* All three panes are mounted simultaneously at this breakpoint, so
+   * `.entry-list` needs its own column here, distinct from
+   * `.reading-pane`'s "pane" area (see the mobile-shared-area comment
+   * above). */
+  .entry-list {
+    grid-area: list;
   }
 }
