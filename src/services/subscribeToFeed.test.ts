@@ -121,6 +121,44 @@ describe("subscribeToFeed", () => {
     expect(localStore.addFeedWithEntries).not.toHaveBeenCalled();
   });
 
+  it("reports relay-unavailable, distinct from unreachable, when the relay itself never ran (Found by real use)", async () => {
+    const localStore = makeLocalStore();
+    const feedSource = makeFeedSource({
+      status: "error",
+      code: "RELAY_UNAVAILABLE",
+      message: "The app's feed relay did not respond -- this is a local setup problem, not an issue with the feed you entered.",
+    });
+
+    const result = await subscribeToFeed(
+      { feedSource, feedParser, localStore, clock: makeClock() },
+      { url: "https://example.com/feed.xml" },
+    );
+
+    expect(result.status).toBe("relay-unavailable");
+    if (result.status !== "relay-unavailable") return;
+    expect(result.message).toContain("relay");
+    expect(localStore.addFeedWithEntries).not.toHaveBeenCalled();
+  });
+
+  it("reports too-large, distinct from unreachable, when the relay's own size cap rejects the body", async () => {
+    const localStore = makeLocalStore();
+    const feedSource = makeFeedSource({
+      status: "error",
+      code: "PAYLOAD_TOO_LARGE",
+      message: "response body exceeded the 5242880-byte limit",
+    });
+
+    const result = await subscribeToFeed(
+      { feedSource, feedParser, localStore, clock: makeClock() },
+      { url: "https://example.com/huge-feed.xml" },
+    );
+
+    expect(result.status).toBe("too-large");
+    if (result.status !== "too-large") return;
+    expect(result.message).toContain("byte limit");
+    expect(localStore.addFeedWithEntries).not.toHaveBeenCalled();
+  });
+
   it("rejects a malformed URL client-side before any network request", async () => {
     const localStore = makeLocalStore();
     const feedSource = makeFeedSource({ status: "error", code: "NETWORK_ERROR", message: "unreachable" });

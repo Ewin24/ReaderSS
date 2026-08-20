@@ -48,7 +48,11 @@ const server = setupServer(
     }
     return HttpResponse.text(RSS2_FIXTURE, {
       status: 200,
-      headers: { "Content-Type": "application/rss+xml", ETag: '"e2e-etag-1"' },
+      headers: {
+        "Content-Type": "application/rss+xml",
+        ETag: '"e2e-etag-1"',
+        "X-Relay-Origin-Status": "200",
+      },
     });
   }),
 );

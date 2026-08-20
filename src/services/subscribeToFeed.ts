@@ -61,6 +61,19 @@ export type SubscribeToFeedResult =
   | { readonly status: "invalid-url" }
   | { readonly status: "not-a-feed"; readonly message: string }
   | { readonly status: "unreachable"; readonly message: string }
+  // Found by real use: `fetchResult.code === "RELAY_UNAVAILABLE"` means the
+  // fetch technically succeeded but did not reach the relay at all (e.g. a
+  // dev server with no Worker wired in, answering with its own app shell).
+  // Kept distinct from `unreachable` -- which means the relay ran and the
+  // ORIGIN could not be reached -- because the fix is different: nothing
+  // about the submitted feed URL is wrong here.
+  | { readonly status: "relay-unavailable"; readonly message: string }
+  // `fetchResult.code === "PAYLOAD_TOO_LARGE"`: the relay reached the origin
+  // and the origin responded, but the body exceeded the relay's 5 MiB cap
+  // (worker/lib/limitedBody.ts). Kept distinct from `unreachable` because
+  // that status's own message ("Could not reach ...") would be false here --
+  // the feed WAS reached, it was just too large to relay.
+  | { readonly status: "too-large"; readonly message: string }
   // Finding 1, Slice 5 correction round: the fetch and parse both
   // succeeded, but the atomic local-store write (`putFeedWithEntries`)
   // rejected -- e.g. an IndexedDB quota error. Surfaced as a defined
@@ -95,6 +108,12 @@ export async function subscribeToFeed(
   const fetchResult = await deps.feedSource.fetchFeed(input.url, { etag: null, lastModified: null });
 
   if (fetchResult.status === "error") {
+    if (fetchResult.code === "RELAY_UNAVAILABLE") {
+      return { status: "relay-unavailable", message: fetchResult.message };
+    }
+    if (fetchResult.code === "PAYLOAD_TOO_LARGE") {
+      return { status: "too-large", message: fetchResult.message };
+    }
     return { status: "unreachable", message: fetchResult.message };
   }
   if (fetchResult.status === "not-modified") {

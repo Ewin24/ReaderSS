@@ -59,7 +59,7 @@ describe("buildServices", () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response("<rss></rss>", {
         status: 200,
-        headers: { "Content-Type": "application/rss+xml" },
+        headers: { "Content-Type": "application/rss+xml", "X-Relay-Origin-Status": "200" },
       }),
     );
     vi.stubGlobal("fetch", fetchMock);

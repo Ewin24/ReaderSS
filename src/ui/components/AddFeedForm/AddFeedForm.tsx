@@ -21,7 +21,16 @@ export type AddFeedFormStatus =
   | { readonly kind: "invalid-url" }
   | { readonly kind: "not-a-feed"; readonly message: string }
   | { readonly kind: "unreachable"; readonly message: string }
-  | { readonly kind: "persist-failed"; readonly message: string };
+  | { readonly kind: "persist-failed"; readonly message: string }
+  // Found by real use: the relay itself never responded (e.g. a dev server
+  // with no Worker wired in), so nothing about the submitted feed is known
+  // to be wrong. Kept distinct from "unreachable", which reports a real
+  // origin-server failure the relay actually observed.
+  | { readonly kind: "relay-unavailable"; readonly message: string }
+  // The relay reached the origin, but the body exceeded the relay's 5 MiB
+  // cap. Kept distinct from "unreachable" -- that status's "Could not
+  // reach" wording would be false here; the feed WAS reached.
+  | { readonly kind: "too-large"; readonly message: string };
 
 export interface AddFeedFormProps {
   status: AddFeedFormStatus;
@@ -49,6 +58,16 @@ function describeStatus(status: AddFeedFormStatus): { text: string; isError: boo
     case "persist-failed":
       return {
         text: `The feed was found, but it could not be saved. ${status.message}`,
+        isError: true,
+      };
+    case "relay-unavailable":
+      return {
+        text: `This app's feed relay isn't responding right now, so nothing was checked yet. ${status.message}`,
+        isError: true,
+      };
+    case "too-large":
+      return {
+        text: `That feed is too large for this app to fetch. ${status.message}`,
         isError: true,
       };
   }

@@ -10,7 +10,11 @@ afterEach(() => {
 describe("RelayFeedSource.fetchFeed", () => {
   test("calls the relay endpoint with the target url percent-encoded as a query parameter", async () => {
     const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
-      async () => new Response("<rss></rss>", { status: 200, headers: { "Content-Type": "application/rss+xml" } }),
+      async () =>
+        new Response("<rss></rss>", {
+          status: 200,
+          headers: { "Content-Type": "application/rss+xml", "X-Relay-Origin-Status": "200" },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -27,7 +31,12 @@ describe("RelayFeedSource.fetchFeed", () => {
         async () =>
           new Response("<rss><channel><title>Example</title></channel></rss>", {
             status: 200,
-            headers: { "Content-Type": "application/rss+xml", ETag: '"abc"', "Last-Modified": "Wed, 21 Oct 2015 07:28:00 GMT" },
+            headers: {
+              "Content-Type": "application/rss+xml",
+              ETag: '"abc"',
+              "Last-Modified": "Wed, 21 Oct 2015 07:28:00 GMT",
+              "X-Relay-Origin-Status": "200",
+            },
           }),
       ),
     );
@@ -45,7 +54,7 @@ describe("RelayFeedSource.fetchFeed", () => {
 
   test("sends stored validators as If-None-Match / If-Modified-Since", async () => {
     const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
-      async () => new Response(null, { status: 304 }),
+      async () => new Response(null, { status: 304, headers: { "X-Relay-Origin-Status": "304" } }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -60,7 +69,10 @@ describe("RelayFeedSource.fetchFeed", () => {
   });
 
   test("returns a 'not-modified' result on 304, with no body field", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 304 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 304, headers: { "X-Relay-Origin-Status": "304" } })),
+    );
 
     const result = await new RelayFeedSource().fetchFeed("https://blog.example.com/feed.xml", {
       etag: '"abc"',
@@ -68,6 +80,20 @@ describe("RelayFeedSource.fetchFeed", () => {
     });
 
     expect(result).toEqual({ status: "not-modified" });
+  });
+
+  test("returns a RELAY_UNAVAILABLE error on a 304 missing the relay's own marker header", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 304 })));
+
+    const result = await new RelayFeedSource().fetchFeed("https://blog.example.com/feed.xml", {
+      etag: '"abc"',
+      lastModified: null,
+    });
+
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.code).toBe("RELAY_UNAVAILABLE");
+    }
   });
 
   test("maps a relay JSON error body to a typed 'error' result, preserving the relay's code and message", async () => {
@@ -145,6 +171,97 @@ describe("RelayFeedSource.fetchFeed", () => {
     expect(result.status).toBe("error");
     if (result.status === "error") {
       expect(result.code).toBe("UPSTREAM_ERROR");
+    }
+  });
+
+  /**
+   * Reproduces the real bug found by manual use: `npm run dev` used to run
+   * `vite` alone, with no `/api/feed` route, so Vite's own SPA fallback
+   * answered every request to it with `index.html` (status 200, no relay
+   * marker header). The old code trusted any `response.ok` body as feed
+   * content and handed the app's own HTML to `feedParser`, which reported
+   * every single feed as "not-a-feed" -- an error about the user's feed the
+   * code had never actually established, since the relay never ran. This
+   * must be caught here, before the body is ever treated as feed content,
+   * and reported as its own distinct, actionable condition.
+   */
+  test("returns a RELAY_UNAVAILABLE error when a 200 response is missing the relay's own marker header (relay never ran)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("<!doctype html><html><body>the app shell</body></html>", {
+            status: 200,
+            headers: { "Content-Type": "text/html" },
+          }),
+      ),
+    );
+
+    const result = await new RelayFeedSource().fetchFeed("https://blog.example.com/feed.xml", NO_VALIDATORS);
+
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.code).toBe("RELAY_UNAVAILABLE");
+      expect(result.message.toLowerCase()).toContain("relay");
+    }
+  });
+
+  test("returns a RELAY_UNAVAILABLE error for an HTML body even when the marker header happens to be absent on an error status too", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("<!doctype html><html><body>Cannot GET /api/feed</body></html>", {
+            status: 404,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          }),
+      ),
+    );
+
+    const result = await new RelayFeedSource().fetchFeed("https://blog.example.com/feed.xml", NO_VALIDATORS);
+
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.code).toBe("RELAY_UNAVAILABLE");
+    }
+  });
+
+  test("still treats a genuine 200 response as feed content when the relay marker header is present", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("<rss><channel><title>Example</title></channel></rss>", {
+            status: 200,
+            headers: { "Content-Type": "application/rss+xml", "X-Relay-Origin-Status": "200" },
+          }),
+      ),
+    );
+
+    const result = await new RelayFeedSource().fetchFeed("https://blog.example.com/feed.xml", NO_VALIDATORS);
+
+    expect(result.status).toBe("updated");
+  });
+
+  test("still treats a genuine relay JSON error as its own reported code, not RELAY_UNAVAILABLE", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: { code: "PAYLOAD_TOO_LARGE", message: "response body exceeded the 5242880-byte limit" },
+            }),
+            { status: 413, headers: { "Content-Type": "application/json" } },
+          ),
+      ),
+    );
+
+    const result = await new RelayFeedSource().fetchFeed("https://blog.example.com/feed.xml", NO_VALIDATORS);
+
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.code).toBe("PAYLOAD_TOO_LARGE");
     }
   });
 });

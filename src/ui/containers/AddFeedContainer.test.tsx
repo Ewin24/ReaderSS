@@ -179,6 +179,47 @@ describe("AddFeedContainer", () => {
     expect(message.textContent).not.toMatch(/no feed was found/i);
   });
 
+  /**
+   * Found by real use: with no relay running, `relayFeedSource.ts` now
+   * reports `RELAY_UNAVAILABLE` instead of returning the app's own HTML as
+   * if it were feed content. This must reach the user as its own outcome,
+   * never folded into "unreachable" (which implies the relay ran and the
+   * ORIGIN failed) and never as "not-a-feed" (which blames the user's URL).
+   */
+  it('maps status "relay-unavailable" to AddFeedForm, distinct from "unreachable" and "not-a-feed"', async () => {
+    const localStore = makeLocalStore();
+    const feedSource = makeFeedSource({
+      status: "error",
+      code: "RELAY_UNAVAILABLE",
+      message: "The app's feed relay did not respond -- this is a local setup problem.",
+    });
+    const feedParser: FeedParserPort = { parse: vi.fn() };
+
+    renderContainer({ localStore, feedSource, feedParser });
+    submit(FEED_URL);
+
+    const message = await screen.findByText(/relay/i);
+    expect(message.textContent).not.toMatch(/no feed was found/i);
+    expect(message.textContent).not.toMatch(/could not reach/i);
+    expect(feedParser.parse).not.toHaveBeenCalled();
+  });
+
+  it('maps status "too-large" to AddFeedForm, distinct from "unreachable"', async () => {
+    const localStore = makeLocalStore();
+    const feedSource = makeFeedSource({
+      status: "error",
+      code: "PAYLOAD_TOO_LARGE",
+      message: "response body exceeded the 5242880-byte limit",
+    });
+    const feedParser: FeedParserPort = { parse: vi.fn() };
+
+    renderContainer({ localStore, feedSource, feedParser });
+    submit(FEED_URL);
+
+    const message = await screen.findByText(/too large/i);
+    expect(message.textContent).not.toMatch(/could not reach/i);
+  });
+
   it('maps status "persist-failed" to AddFeedForm when the atomic store write rejects', async () => {
     const localStore = makeLocalStore({
       addFeedWithEntries: vi.fn().mockRejectedValue(new Error("IndexedDB quota exceeded")),

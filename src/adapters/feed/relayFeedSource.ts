@@ -9,6 +9,42 @@ import { FEED_FETCH_ERROR_CODES } from "../../ports/FeedSourcePort";
 const RELAY_ENDPOINT = "/api/feed";
 
 /**
+ * Every response `worker/routes/feed.ts` produces (success via
+ * `readLimitedBody`, or a 304 via `buildNotModifiedResponse` in
+ * `worker/lib/conditional.ts`) sets this header. An error response
+ * (`errorResponse()` in `worker/routes/feed.ts`) does not set it, but is
+ * still identifiable by its own `application/json` body matching the
+ * `RELAY_ERROR_CODES` taxonomy — checked separately by `parseRelayError`.
+ * Its absence on a 2xx/304 response, or an HTML body regardless of status,
+ * means whatever answered `/api/feed` was not the relay at all: found by
+ * real use, this happens when the dev server has no Worker wired in and its
+ * own SPA fallback answers `/api/feed` with `index.html` and a 200.
+ */
+const RELAY_MARKER_HEADER = "X-Relay-Origin-Status";
+
+function isHtmlContentType(contentType: string | null): boolean {
+  if (contentType === null) return false;
+  return contentType.split(";")[0].trim().toLowerCase() === "text/html";
+}
+
+/** True when `response` carries none of the marks a real relay response
+ * always has on a non-error path (see RELAY_MARKER_HEADER's doc comment). */
+function looksLikeMissingRelay(response: Response): boolean {
+  return response.headers.get(RELAY_MARKER_HEADER) === null || isHtmlContentType(response.headers.get("Content-Type"));
+}
+
+function relayUnavailableResult(): { status: "error"; code: "RELAY_UNAVAILABLE"; message: string } {
+  return {
+    status: "error",
+    code: "RELAY_UNAVAILABLE",
+    message:
+      "The app's feed relay did not respond -- this is a local setup problem, not an issue with the feed you entered. " +
+      "If you are developing locally, make sure your dev command starts the relay (see README.md); if this happens in " +
+      "a deployed app, the deployment is misconfigured.",
+  };
+}
+
+/**
  * Slice 4 correction, finding 4: the Worker's own cumulative deadline
  * (worker/routes/feed.ts's UPSTREAM_TIMEOUT_MS) bounds total relay-to-origin
  * latency to 10s regardless of redirect count (finding 3's fix). This
@@ -75,12 +111,27 @@ export class RelayFeedSource implements FeedSourcePort {
     }
 
     if (response.status === 304) {
+      if (looksLikeMissingRelay(response)) {
+        return relayUnavailableResult();
+      }
       return { status: "not-modified" };
     }
 
     if (!response.ok) {
+      // Only the HTML check applies here, not the marker-header check: a
+      // genuine relay error response (`errorResponse()` in
+      // worker/routes/feed.ts) correctly omits RELAY_MARKER_HEADER, so
+      // requiring it on this path would misclassify every real relay error
+      // as "relay missing".
+      if (isHtmlContentType(response.headers.get("Content-Type"))) {
+        return relayUnavailableResult();
+      }
       const { code, message } = await parseRelayError(response);
       return { status: "error", code, message };
+    }
+
+    if (looksLikeMissingRelay(response)) {
+      return relayUnavailableResult();
     }
 
     const body = await response.text();

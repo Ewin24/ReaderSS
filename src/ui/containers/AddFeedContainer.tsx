@@ -39,6 +39,10 @@ function toFormStatus(url: string, result: SubscribeToFeedResult): AddFeedFormSt
       return { kind: "unreachable", message: `Could not reach ${url}. ${result.message}` };
     case "persist-failed":
       return { kind: "persist-failed", message: result.message };
+    case "relay-unavailable":
+      return { kind: "relay-unavailable", message: result.message };
+    case "too-large":
+      return { kind: "too-large", message: result.message };
   }
 }
 

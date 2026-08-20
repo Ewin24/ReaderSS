@@ -56,6 +56,20 @@ describe("AddFeedForm", () => {
       status: { kind: "persist-failed", message: "IndexedDB quota exceeded" },
       mustContain: /could not be saved/i,
     },
+    {
+      status: {
+        kind: "relay-unavailable",
+        message: "The app's feed relay did not respond -- this is a local setup problem.",
+      },
+      mustContain: /relay/i,
+    },
+    {
+      status: {
+        kind: "too-large",
+        message: "response body exceeded the 5242880-byte limit",
+      },
+      mustContain: /too large/i,
+    },
   ];
 
   it.each(STATUSES)("renders a status-specific message for status kind $status.kind", ({ status, mustContain }) => {
@@ -64,7 +78,7 @@ describe("AddFeedForm", () => {
     expect(screen.getByText(mustContain)).toBeInTheDocument();
   });
 
-  it("renders six textually distinct messages across the six outcome statuses -- no shared generic fallback", () => {
+  it("renders eight textually distinct messages across the eight outcome statuses -- no shared generic fallback", () => {
     const feedTitle = "Example Blog";
     const messages = [
       { kind: "subscribed", feedTitle } as const,
@@ -76,6 +90,11 @@ describe("AddFeedForm", () => {
         message: "Could not reach https://example.com/feed.xml. timed out",
       } as const,
       { kind: "persist-failed", message: "IndexedDB quota exceeded" } as const,
+      {
+        kind: "relay-unavailable",
+        message: "The app's feed relay did not respond -- this is a local setup problem.",
+      } as const,
+      { kind: "too-large", message: "response body exceeded the 5242880-byte limit" } as const,
     ].map((status) => {
       const { unmount, container } = render(<AddFeedForm status={status} onSubmit={vi.fn()} />);
       const text = container.querySelector(".add-feed-form__message")?.textContent ?? "";
