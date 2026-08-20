@@ -27,6 +27,7 @@ import { useServices } from "../../app/providers/ServicesContext";
 import { toggleRead } from "../../services/toggleRead";
 import { toggleStar } from "../../services/toggleStar";
 import type { ToggleFieldResult } from "../../services/toggleEntryField";
+import { describeError } from "../../domain/errors/describeError";
 import { EntryList, type EntryListProps } from "../components/EntryList";
 
 export type EntryListContainerProps = Omit<EntryListProps, "onToggleRead" | "onToggleStar"> & {
@@ -37,10 +38,6 @@ export type EntryListContainerProps = Omit<EntryListProps, "onToggleRead" | "onT
    * failure is visible rather than a click that silently did nothing. */
   onToggleError?: (entryId: string, message: string) => void;
 };
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function EntryListContainer({ onEntryChanged, onToggleError, ...listProps }: EntryListContainerProps) {
   const services = useServices();

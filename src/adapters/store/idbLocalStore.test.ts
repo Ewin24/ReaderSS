@@ -230,6 +230,61 @@ describe("putFeedWithEntries — atomic feed+entries write (Finding 1)", () => {
   });
 });
 
+describe("addFeedWithEntries — atomic create-only write (Finding 2, Slice 10b correction round)", () => {
+  it("persists the feed and every entry together, the same as putFeedWithEntries, when no feed with this id exists yet", async () => {
+    const f = feed({ id: "https://atomic-add.example/feed.xml" });
+    const e1 = entry({ id: "https://atomic-add.example/feed.xml:1", feedId: f.id });
+
+    const result = await store.addFeedWithEntries(f, [e1]);
+
+    expect(result).toBe("created");
+    expect(await store.getFeed(f.id)).toEqual(f);
+    expect((await store.listEntriesByFeed(f.id)).map((e) => e.id)).toEqual([e1.id]);
+  });
+
+  it("rejects with 'duplicate' instead of overwriting, when a feed with this id already exists -- the two-tab race Finding 2 closes", async () => {
+    const f = feed({ id: "https://race.example/feed.xml", title: "First writer's title" });
+    const firstEntry = entry({ id: "https://race.example/feed.xml:1", feedId: f.id });
+    await store.addFeedWithEntries(f, [firstEntry]);
+
+    // Simulates a second same-origin tab (or any concurrent caller) that
+    // evaluated "does this feed exist?" before the first writer's add above
+    // committed, and now attempts to create the same id with DIFFERENT
+    // content -- the exact shape of the pre-fix race `subscribeToFeed`'s
+    // `getFeed` + `putFeedWithEntries` could lose silently.
+    const second = feed({ id: f.id, title: "Second writer's title (must not win)" });
+    const secondEntry = entry({ id: "https://race.example/feed.xml:2", feedId: f.id });
+
+    const result = await store.addFeedWithEntries(second, [secondEntry]);
+
+    expect(result).toBe("duplicate");
+    // The first writer's row survives untouched -- neither its feed row nor
+    // its entry was overwritten or partially merged.
+    expect(await store.getFeed(f.id)).toEqual(f);
+    expect(await store.getEntry(firstEntry.id)).toBeDefined();
+    // The second writer's entry must never have been persisted either --
+    // an atomic "created XOR duplicate" outcome, not a partial write.
+    expect(await store.getEntry(secondEntry.id)).toBeUndefined();
+  });
+
+  it("rolls back the feed row too when a later entry in the batch is invalid, same as putFeedWithEntries's own guarantee", async () => {
+    const f = feed({ id: "https://atomic-add-rollback.example/feed.xml" });
+    const validEntry = entry({ id: "https://atomic-add-rollback.example/feed.xml:1", feedId: f.id });
+    const invalidEntry = entry({
+      id: "https://atomic-add-rollback.example/feed.xml:2",
+      feedId: f.id,
+      starred: 1,
+    });
+
+    await expect(store.addFeedWithEntries(f, [validEntry, invalidEntry])).rejects.toThrow(
+      /starredChangedAt/,
+    );
+
+    expect(await store.getFeed(f.id)).toBeUndefined();
+    expect(await store.getEntry(validEntry.id)).toBeUndefined();
+  });
+});
+
 describe("config — key/value store", () => {
   it("round-trips an arbitrary config value by key", async () => {
     await store.putConfigValue("ui", { layout: "split" });

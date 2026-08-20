@@ -18,9 +18,13 @@ import { FeedSidebar, type FeedSidebarItem } from "../ui/components/FeedSidebar"
 import { EntryListContainer } from "../ui/containers/EntryListContainer";
 import { ReadingPaneContainer } from "../ui/containers/ReadingPaneContainer";
 import { FeedSidebarContainer } from "../ui/containers/FeedSidebarContainer";
+import { AddFeedContainer } from "../ui/containers/AddFeedContainer";
+import { RefreshContainer } from "../ui/containers/RefreshContainer";
 import type { ReadingPaneEntry } from "../ui/components/ReadingPane";
 import { DESKTOP_QUERY, useMediaQuery } from "./useMediaQuery";
+import { useRefreshSignals } from "./useRefreshSignals";
 import { useServices } from "./providers/ServicesContext";
+import { describeError } from "../domain/errors/describeError";
 import type { AppEntry, AppFeed } from "./types";
 import "../styles/grid.css";
 
@@ -41,10 +45,6 @@ interface LoadState {
 }
 
 const LOADED: LoadState = { status: "loaded" };
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function toAppFeed(feed: { id: string; title: string; folder: string | null }): AppFeed {
   return { id: feed.id, title: feed.title, folder: feed.folder };
@@ -84,13 +84,20 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   const [feedsState, setFeedsState] = useState<LoadState>(usingOverride ? LOADED : { status: "loading" });
   const [entriesState, setEntriesState] = useState<LoadState>(LOADED);
   const [toggleErrorMessage, setToggleErrorMessage] = useState<string | null>(null);
-  // Bumped whenever a store-driven entry changes (read/unread, star/unstar),
-  // so `FeedSidebarContainer` re-fetches its unread counts. Finding 2, Slice
-  // 10a correction round: without this, the sidebar badge only reflected
-  // reality at mount, going stale for the rest of the session -- violating
-  // entry-reading spec's "the owning feed's unread count MUST decrease by
-  // one on open / increase by one on mark-unread".
-  const [sidebarRefreshSignal, setSidebarRefreshSignal] = useState(0);
+  // Findings 3 & 4, Slice 10b correction round: the three refresh-signal
+  // counters (feed list changed, an entry's state changed, a manual refresh
+  // completed) and their bump handlers used to live inline here as three
+  // separate `useState`s, and `FeedSidebarContainer`'s prop was an opaque
+  // arithmetic sum of two of them. See `useRefreshSignals.ts` for the full
+  // rationale.
+  const {
+    feedListVersion,
+    entriesVersion,
+    feedSidebarSignal,
+    bumpFeedList,
+    bumpEntryState,
+    bumpEntries,
+  } = useRefreshSignals();
 
   const feeds = usingOverride ? (feedsOverride as AppFeed[]) : storeFeeds;
   const allEntries = usingOverride ? (entriesOverride as AppEntry[]) : storeEntries;
@@ -129,8 +136,9 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     // `services` is intentionally not a dependency: it comes from
     // `ServicesContext` and is expected to be a stable object identity for
     // the lifetime of the provider (constructed once by `buildServices()`
-    // in `main.tsx`).
-  }, [usingOverride]);
+    // in `main.tsx`). `feedListVersion` IS a dependency: it is what makes an
+    // added or removed feed (task 10.15/10.19) show up here.
+  }, [usingOverride, feedListVersion]);
 
   // Default feed selection once the store's feed list has loaded (mirrors
   // the override path's lazy-initializer default of "first feed").
@@ -165,7 +173,10 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
       cancelled = true;
     };
     // See the feeds-load effect above for why `services` is not listed.
-  }, [usingOverride, selectedFeedId]);
+    // `entriesVersion` IS a dependency: it is what makes a manual refresh's
+    // newly fetched entries (task 10.17) show up here, since a refresh does
+    // not itself change `selectedFeedId`.
+  }, [usingOverride, selectedFeedId, entriesVersion]);
 
   const feedEntries = useMemo(
     () =>
@@ -258,15 +269,48 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
         setStoreEntries((current) =>
           current.map((existing) => (existing.id === entryId ? toAppEntry(entry) : existing)),
         );
-        setSidebarRefreshSignal((current) => current + 1);
+        bumpEntryState();
       });
     },
-    [usingOverride, services],
+    [usingOverride, services, bumpEntryState],
   );
 
   const handleToggleError = useCallback((_entryId: string, message: string) => {
     setToggleErrorMessage(message);
   }, []);
+
+  // Task 10.15: a newly subscribed feed (feed-subscriptions spec, "Add a
+  // feed by URL" -- "the feed MUST appear in the feed list without a page
+  // reload") is also selected immediately, so its entries are visible
+  // without an extra click.
+  const handleFeedSubscribed = useCallback(
+    (feedId: string) => {
+      bumpFeedList();
+      setSelectedFeedId(feedId);
+      setSelectedEntryId(null);
+    },
+    [bumpFeedList],
+  );
+
+  // Task 10.19: if the removed feed was the selected one, clear the
+  // selection -- the entries-load effect above then naturally clears
+  // `storeEntries` for a null `selectedFeedId`.
+  const handleFeedRemoved = useCallback(
+    (feedId: string) => {
+      bumpFeedList();
+      setSelectedFeedId((current) => (current === feedId ? null : current));
+    },
+    [bumpFeedList],
+  );
+
+  // Task 10.17: a refresh does not add/remove feeds, only fetches new
+  // content for existing ones, so only the entries/entry-state signals are
+  // bumped -- never `bumpFeedList`, which would needlessly reload
+  // `storeFeeds` (feed titles/folders do not change on refresh).
+  const handleRefreshCompleted = useCallback(() => {
+    bumpEntries();
+    bumpEntryState();
+  }, [bumpEntries, bumpEntryState]);
 
   // On a narrow viewport, only one of EntryList/ReadingPane is mounted at a
   // time (design.md's responsive-layout requirement), and unmounting the
@@ -348,6 +392,10 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
           {toggleErrorMessage}
         </p>
       )}
+      <div class="app-shell__actions">
+        <AddFeedContainer onSubscribed={handleFeedSubscribed} />
+        <RefreshContainer onRefreshed={handleRefreshCompleted} />
+      </div>
       {usingOverride ? (
         <FeedSidebar
           feeds={overrideFeedSidebarItems}
@@ -358,7 +406,8 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
         <FeedSidebarContainer
           selectedFeedId={selectedFeedId}
           onSelectFeed={handleSelectFeed}
-          refreshSignal={sidebarRefreshSignal}
+          refreshSignal={feedSidebarSignal}
+          onFeedRemoved={handleFeedRemoved}
         />
       )}
       {showList && entryListArea}

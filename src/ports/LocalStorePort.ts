@@ -26,6 +26,23 @@ export interface LocalStorePort {
    * only some of its entries, or entries persisted with no owning feed.
    */
   putFeedWithEntries(feed: Feed, entries: readonly Entry[]): Promise<void>;
+  /**
+   * Atomically creates a feed and its entries ONLY if no feed with this id
+   * already exists, resolving `"duplicate"` instead of silently overwriting
+   * when it does (Finding 2, Slice 10b correction round). `subscribeToFeed`
+   * uses this for its create path instead of `putFeedWithEntries`: a
+   * `getFeed` existence check followed by a separate write is two
+   * non-atomic steps, so two same-origin tabs submitting the same feed URL
+   * in the same moment could both pass the check and the second would
+   * silently win, overwriting the first's data while reporting `subscribed`
+   * instead of `duplicate`. `refreshFeeds` keeps using `putFeedWithEntries`
+   * unchanged -- a refresh is always an update to an already-existing feed,
+   * where "duplicate" would be meaningless.
+   */
+  addFeedWithEntries(
+    feed: Feed,
+    entries: readonly Entry[],
+  ): Promise<"created" | "duplicate">;
 
   /** All entries for one feed, unordered (`by-feed`). */
   listEntriesByFeed(feedId: string): Promise<Entry[]>;

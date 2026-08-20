@@ -8,11 +8,22 @@
  * failed").
  *
  * The feed row and its entries are written in one atomic call
- * (`LocalStorePort.putFeedWithEntries`, Finding 1 of the Slice 5 correction
- * round) rather than a `putFeed` + `putEntry` loop: a rejection partway
- * through must never leave a feed persisted with only some of its entries.
- * A rejection from that call surfaces as the typed `persist-failed` result
- * below, not an escaping exception.
+ * (`LocalStorePort.addFeedWithEntries`, Finding 1 of the Slice 5 correction
+ * round; changed to the create-only `addFeedWithEntries` variant in Finding
+ * 2 of the Slice 10b correction round) rather than a `putFeed` + `putEntry`
+ * loop: a rejection partway through must never leave a feed persisted with
+ * only some of its entries. A rejection from that call surfaces as the
+ * typed `persist-failed` result below, not an escaping exception.
+ *
+ * The existence pre-check below (`getFeed`) and the write are NOT treated
+ * as sufficient on their own to prevent a duplicate (Finding 2, Slice 10b
+ * correction round): they are two separate steps, so two same-origin tabs
+ * submitting the same URL in the same moment could both pass the check
+ * before either writes. The pre-check stays, purely as an optimization --
+ * it avoids a network fetch for the overwhelmingly common single-tab case
+ * -- but the actual duplicate decision is made atomically by
+ * `addFeedWithEntries` itself, which is IndexedDB's own keyed `add()`
+ * under the hood and therefore cannot lose this race.
  *
  * RETENTION IS STILL DELIBERATELY NOT ENFORCED HERE (Finding 2 of the
  * Slice 5 correction round; now confirmed unchanged by Slice 6):
@@ -117,11 +128,23 @@ export async function subscribeToFeed(
     lastSuccessAt: now,
   };
 
+  let writeResult: "created" | "duplicate";
   try {
-    await deps.localStore.putFeedWithEntries(feed, parseResult.feed.entries);
+    writeResult = await deps.localStore.addFeedWithEntries(feed, parseResult.feed.entries);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { status: "persist-failed", message };
+  }
+
+  if (writeResult === "duplicate") {
+    // Finding 2, Slice 10b correction round: a concurrent writer -- most
+    // realistically a second same-origin tab -- won the atomic create
+    // between the existence pre-check above and this write. Re-read the
+    // row that writer actually persisted so the caller gets an honest
+    // `duplicate` result pointing at what is really in the store, instead
+    // of a result built from data that was never written.
+    const winner = await deps.localStore.getFeed(normalizedUrl);
+    return { status: "duplicate", existing: winner ?? feed };
   }
 
   return { status: "subscribed", feed, entryCount: parseResult.feed.entries.length };

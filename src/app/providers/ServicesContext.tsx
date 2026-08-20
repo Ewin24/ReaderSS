@@ -10,6 +10,7 @@
 import { createContext, type ComponentChildren } from "preact";
 import { useContext } from "preact/hooks";
 import type { ClockPort } from "../../ports/ClockPort";
+import type { FeedParserPort } from "../../ports/FeedParserPort";
 import type { FeedSourcePort } from "../../ports/FeedSourcePort";
 import type { LocalStorePort } from "../../ports/LocalStorePort";
 
@@ -18,8 +19,18 @@ export interface Services {
   readonly clock: ClockPort;
   /** Added in Slice 10a for the composition root (`buildServices.ts`); the
    * first real production callers are Slice 10b's add-feed and refresh
-   * containers, not yet built. */
+   * containers. */
   readonly feedSource: FeedSourcePort;
+  /**
+   * Added in Slice 10b. Root-cause fix: `buildServices()` previously wired
+   * only `localStore`/`clock`/`feedSource`, so nothing in the app's real
+   * import graph reached `adapters/feed/feedParser.ts` -- confirmed
+   * empirically by grepping the built bundle, which contained DOMPurify and
+   * `idb` but zero feed-parsing code. `subscribeToFeed`/`refreshFeeds` both
+   * require a `FeedParserPort`, which is why every service that ingests a
+   * feed needs this on `Services` alongside `feedSource`.
+   */
+  readonly feedParser: FeedParserPort;
 }
 
 const ServicesContext = createContext<Services | null>(null);

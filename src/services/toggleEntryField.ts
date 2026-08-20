@@ -20,6 +20,7 @@
 import type { ClockPort } from "../ports/ClockPort";
 import type { Entry } from "../domain/models/Entry";
 import type { LocalStorePort } from "../ports/LocalStorePort";
+import { describeError } from "../domain/errors/describeError";
 
 export interface ToggleFieldDeps {
   readonly localStore: LocalStorePort;
@@ -37,10 +38,6 @@ export type ToggleFieldResult =
   | { readonly status: "no-op"; readonly value: 0 | 1 }
   | { readonly status: "not-found" }
   | { readonly status: "error"; readonly message: string };
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export async function toggleEntryField(
   deps: ToggleFieldDeps,

@@ -11,10 +11,20 @@
  * rule, unlike `services/**`/`ui/containers/**`, which is what makes this
  * exact file the one place allowed to import `adapters/**` directly outside
  * of `worker/**`.
+ *
+ * Root-cause fix (Slice 10b): this module previously wired only
+ * `localStore`/`clock`/`feedSource`. `feedParser` was never constructed or
+ * added to `Services`, so `services/subscribeToFeed.ts` and
+ * `services/refreshFeeds.ts` -- and therefore the whole feed-ingestion half
+ * of the app -- had no real caller anywhere in the production import graph.
+ * Confirmed empirically: grepping the built `dist/` bundle before this fix
+ * found DOMPurify and `idb` but zero feed-parsing markers (no `pubDate`, no
+ * `enclosure`, no `subscribeToFeed`). `feedParser` is now wired below.
  */
 import { openReaderSSDatabase } from "../../adapters/store/schema";
 import { createIdbLocalStore } from "../../adapters/store/idbLocalStore";
 import { RelayFeedSource } from "../../adapters/feed/relayFeedSource";
+import { feedParser } from "../../adapters/feed/feedParser";
 import { DomPurifySanitizer } from "../../adapters/security/domPurifySanitizer";
 import type { SanitizeFn } from "../../ui/components/SafeHtml";
 import type { Services } from "../providers/ServicesContext";
@@ -39,6 +49,7 @@ export async function buildServices(): Promise<BuiltServices> {
     localStore: createIdbLocalStore(db),
     clock: { now: () => new Date().toISOString() },
     feedSource: new RelayFeedSource(),
+    feedParser,
   };
 
   return {

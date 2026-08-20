@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
+import type { FeedParserPort } from "../../ports/FeedParserPort";
 import type { FeedSourcePort } from "../../ports/FeedSourcePort";
 import type { LocalStorePort } from "../../ports/LocalStorePort";
 import { createEntry, type Entry } from "../../domain/models/Entry";
@@ -49,6 +50,7 @@ const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
 // Services was extended with `feedSource` in Slice 10a; this container
 // doesn't use it, so a bare stub is enough to satisfy the `Services` type.
 const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
+const feedParser: FeedParserPort = { parse: vi.fn() };
 
 describe("EntryListContainer", () => {
   it("binds the read toggle to the real toggleRead service via the services context", async () => {
@@ -57,7 +59,7 @@ describe("EntryListContainer", () => {
     const onEntryChanged = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
         <EntryListContainer
           entries={[
             {
@@ -91,7 +93,7 @@ describe("EntryListContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
         <EntryListContainer
           entries={[
             {
@@ -127,7 +129,7 @@ describe("EntryListContainer", () => {
     const onToggleError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
         <EntryListContainer
           entries={[
             {

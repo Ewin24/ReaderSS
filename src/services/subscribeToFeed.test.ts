@@ -19,6 +19,7 @@ function makeLocalStore(overrides: Partial<LocalStorePort> = {}): LocalStorePort
     listFeedsByFolder: vi.fn().mockResolvedValue([]),
     putFeed: vi.fn().mockResolvedValue(undefined),
     putFeedWithEntries: vi.fn().mockResolvedValue(undefined),
+    addFeedWithEntries: vi.fn().mockResolvedValue("created"),
     deleteFeed: vi.fn().mockResolvedValue(undefined),
     getEntry: vi.fn().mockResolvedValue(undefined),
     getEntryByFeedAndGuid: vi.fn().mockResolvedValue(undefined),
@@ -76,8 +77,8 @@ describe("subscribeToFeed", () => {
     expect(result.feed.etag).toBe('"abc"');
     expect(result.entryCount).toBe(1);
 
-    expect(localStore.putFeedWithEntries).toHaveBeenCalledTimes(1);
-    const [persistedFeed, persistedEntries] = vi.mocked(localStore.putFeedWithEntries).mock.calls[0];
+    expect(localStore.addFeedWithEntries).toHaveBeenCalledTimes(1);
+    const [persistedFeed, persistedEntries] = vi.mocked(localStore.addFeedWithEntries).mock.calls[0];
     expect(persistedFeed.normalizedUrl).toBe("https://example.com/feed.xml");
     expect(persistedEntries).toHaveLength(1);
   });
@@ -98,7 +99,7 @@ describe("subscribeToFeed", () => {
     );
 
     expect(result.status).toBe("not-a-feed");
-    expect(localStore.putFeedWithEntries).not.toHaveBeenCalled();
+    expect(localStore.addFeedWithEntries).not.toHaveBeenCalled();
   });
 
   it("reports an unreachable feed, and persists nothing", async () => {
@@ -117,7 +118,7 @@ describe("subscribeToFeed", () => {
     expect(result.status).toBe("unreachable");
     if (result.status !== "unreachable") return;
     expect(result.message).toContain("did not respond");
-    expect(localStore.putFeedWithEntries).not.toHaveBeenCalled();
+    expect(localStore.addFeedWithEntries).not.toHaveBeenCalled();
   });
 
   it("rejects a malformed URL client-side before any network request", async () => {
@@ -131,12 +132,12 @@ describe("subscribeToFeed", () => {
 
     expect(result.status).toBe("invalid-url");
     expect(feedSource.fetchFeed).not.toHaveBeenCalled();
-    expect(localStore.putFeedWithEntries).not.toHaveBeenCalled();
+    expect(localStore.addFeedWithEntries).not.toHaveBeenCalled();
   });
 
   it("returns a typed persist-failed result, instead of an escaping exception, when the atomic feed+entries write rejects (Finding 1)", async () => {
     const localStore = makeLocalStore({
-      putFeedWithEntries: vi.fn().mockRejectedValue(new Error("simulated IndexedDB quota error")),
+      addFeedWithEntries: vi.fn().mockRejectedValue(new Error("simulated IndexedDB quota error")),
     });
     const feedSource = makeFeedSource({
       status: "updated",
@@ -186,5 +187,55 @@ describe("subscribeToFeed", () => {
     if (result.status !== "duplicate") return;
     expect(result.existing).toBe(existing);
     expect(feedSource.fetchFeed).not.toHaveBeenCalled();
+  });
+
+  it("reports duplicate, not subscribed, when a concurrent writer wins the atomic create between the pre-check and the write (Finding 2, Slice 10b correction round)", async () => {
+    // Simulates the two-tab race: `getFeed` (the pre-check above) still
+    // reports `undefined` -- no local knowledge of a duplicate yet -- but
+    // by the time this call's own write reaches the store, another writer
+    // has already created the row. `addFeedWithEntries` is the ONLY thing
+    // that can catch this honestly, since it is IndexedDB's own atomic
+    // keyed `add()` under the hood, not a second non-atomic check.
+    const winnersFeed: Feed = {
+      id: "https://example.com/feed.xml",
+      url: "https://example.com/feed.xml",
+      normalizedUrl: "https://example.com/feed.xml",
+      title: "The other tab's title",
+      siteUrl: null,
+      folder: null,
+      etag: null,
+      lastModified: null,
+      lastFetchedAt: null,
+      lastSuccessAt: null,
+      lastError: null,
+      addedAt: "2024-01-01T00:00:00.000Z",
+      unstableGuid: 0,
+    };
+    const localStore = makeLocalStore({
+      getFeed: vi
+        .fn()
+        .mockResolvedValueOnce(undefined) // the pre-check: no duplicate known yet
+        .mockResolvedValueOnce(winnersFeed), // the post-"duplicate" re-read
+      addFeedWithEntries: vi.fn().mockResolvedValue("duplicate"),
+    });
+    const feedSource = makeFeedSource({
+      status: "updated",
+      body: VALID_RSS_BODY,
+      contentType: "application/rss+xml",
+      etag: '"abc"',
+      lastModified: null,
+    });
+
+    const result = await subscribeToFeed(
+      { feedSource, feedParser, localStore, clock: makeClock() },
+      { url: "https://example.com/feed.xml" },
+    );
+
+    expect(result.status).toBe("duplicate");
+    if (result.status !== "duplicate") return;
+    // Points at the winning writer's actual persisted row, not at data this
+    // call itself parsed but never got to write.
+    expect(result.existing).toBe(winnersFeed);
+    expect(localStore.addFeedWithEntries).toHaveBeenCalledTimes(1);
   });
 });

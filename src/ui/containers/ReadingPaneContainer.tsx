@@ -17,11 +17,12 @@
  * data. Slice 10 (composition root + add-feed UI) is where this container
  * gets mounted.
  */
-import { useCallback, useEffect } from "preact/hooks";
+import { useCallback, useEffect, useRef } from "preact/hooks";
 import { useServices } from "../../app/providers/ServicesContext";
 import { toggleRead } from "../../services/toggleRead";
 import { toggleStar } from "../../services/toggleStar";
 import type { ToggleFieldResult } from "../../services/toggleEntryField";
+import { describeError } from "../../domain/errors/describeError";
 import { ReadingPane, type ReadingPaneProps } from "../components/ReadingPane";
 
 export type ReadingPaneContainerProps = Omit<ReadingPaneProps, "onToggleRead" | "onToggleStar"> & {
@@ -33,10 +34,6 @@ export type ReadingPaneContainerProps = Omit<ReadingPaneProps, "onToggleRead" | 
    * that silently did nothing. */
   onToggleError?: (entryId: string, message: string) => void;
 };
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function ReadingPaneContainer({
   entry,
@@ -57,16 +54,29 @@ export function ReadingPaneContainer({
     [onEntryChanged, onToggleError],
   );
 
+  // Tracks the id of the entry this effect has already made its one
+  // auto-mark-as-read attempt for. Finding 1, Slice 10b correction round:
+  // `entry` is a LIVE object from App's own state, not a static prop -- once
+  // this effect writes `read: 1`, App re-renders with the fresh entry and
+  // hands it back down here. Without this guard, that re-render's changed
+  // `entry.read` would re-trigger the effect and immediately overwrite a
+  // user's explicit "Mark as unread" click back to `read: 1`, the instant
+  // they made it. Gating on entry id (not `entry.read`) means the auto-mark
+  // decision is made exactly once per opened entry, at open time -- exactly
+  // what "opening an entry marks it read" requires -- and never again for
+  // that same entry no matter how its `read` value changes afterward.
+  const autoMarkedEntryIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (entry === null || entry.read === 1) return;
+    if (entry === null) return;
+    if (autoMarkedEntryIdRef.current === entry.id) return;
+    autoMarkedEntryIdRef.current = entry.id;
+    if (entry.read === 1) return;
     const entryId = entry.id;
     toggleRead(services, entryId, 1)
       .then((result) => handleResult(entryId, result))
       .catch((error: unknown) => onToggleError?.(entryId, describeError(error)));
-    // Only `entry.id`/`entry.read` need to be watched -- re-running this
-    // effect for every unrelated field change on the same open entry would
-    // needlessly re-check an already-settled read state.
-  }, [entry?.id, entry?.read, services, handleResult, onToggleError]);
+  }, [entry, services, handleResult, onToggleError]);
 
   const handleToggleRead = useCallback(
     (entryId: string) => {

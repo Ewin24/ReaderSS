@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { within } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
+import type { FeedParserPort } from "../../ports/FeedParserPort";
 import type { FeedSourcePort } from "../../ports/FeedSourcePort";
 import type { LocalStorePort } from "../../ports/LocalStorePort";
 import type { Services } from "../providers/ServicesContext";
@@ -13,6 +14,7 @@ vi.mock("./buildServices", () => ({
 
 const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
 const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
+const feedParser: FeedParserPort = { parse: vi.fn() };
 
 function makeLocalStore(): LocalStorePort {
   return {
@@ -72,7 +74,7 @@ afterEach(() => {
  */
 describe("bootstrapApp", () => {
   it("renders the app tree into the root element when buildServices resolves", async () => {
-    const services: Services = { localStore: makeLocalStore(), clock, feedSource };
+    const services: Services = { localStore: makeLocalStore(), clock, feedSource, feedParser };
     buildServicesMock.mockResolvedValue({ services, sanitize: (html) => html });
     const root = makeAttachedRoot();
 

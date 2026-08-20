@@ -24,11 +24,8 @@ import { App } from "../App";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { ServicesProvider } from "../providers/ServicesContext";
 import { SanitizerContext } from "../../ui/components/SafeHtml";
+import { describeError } from "../../domain/errors/describeError";
 import { buildServices } from "./buildServices";
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 /**
  * Renders a startup-failure fallback directly into `root`, replacing

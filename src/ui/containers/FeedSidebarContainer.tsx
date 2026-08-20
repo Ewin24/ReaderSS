@@ -22,41 +22,60 @@
  */
 import { useCallback, useEffect, useState } from "preact/hooks";
 import { useServices } from "../../app/providers/ServicesContext";
+import { describeError } from "../../domain/errors/describeError";
 import { FeedSidebar, type FeedSidebarItem } from "../components/FeedSidebar";
 
 export interface FeedSidebarContainerProps {
   selectedFeedId: string | null;
   onSelectFeed: (feedId: string) => void;
   /**
-   * Bumped by a parent to force a re-fetch of feeds and unread counts.
-   * `App.tsx` bumps this after every store-driven entry change (read/unread,
-   * star/unstar toggle) so the badge follows the store instead of only
-   * reflecting reality at mount (Finding 2, Slice 10a correction round).
-   * Unit 10b's add-feed and remove-feed flows are expected to bump it too.
+   * `[feedListVersion, entryStateVersion]` (see `useRefreshSignals.ts`):
+   * bumped by a parent to force a re-fetch of feeds and unread counts,
+   * either when the feed list itself changes (a feed added/removed) or when
+   * an entry's read/unread or star/unstar state changes (Finding 2, Slice
+   * 10a correction round; the tuple form is Finding 4, Slice 10b correction
+   * round -- previously a single summed number, an opaque combined value
+   * with an implicit "both are monotonic" invariant). Destructured into two
+   * separate effect dependencies below, not depended on by tuple identity,
+   * so a re-render that creates an equal-valued-but-new array does not
+   * trigger a needless re-fetch.
    */
-  refreshSignal?: number;
+  refreshSignal?: readonly [feedListVersion: number, entryStateVersion: number];
   /** Called when the feed/unread-count load fails, so a parent can surface
    * it alongside other app-level errors if it wants to. This container
    * already renders its own distinct error message either way. */
   onLoadError?: (message: string) => void;
+  /**
+   * Called after a feed is successfully removed (task 10.18-10.19), so a
+   * parent can react -- e.g. `App.tsx` clears the current selection if the
+   * removed feed was the one selected. `deleteFeed` (`idbLocalStore`,
+   * cascading entry deletion since Slice 2) was unreachable from the UI
+   * until this task; `FeedSidebar`'s own confirmation step guarantees this
+   * container only ever calls `deleteFeed` after the user explicitly
+   * confirmed (feed-subscriptions spec, "Removal is confirmed before it
+   * happens").
+   */
+  onFeedRemoved?: (feedId: string) => void;
 }
 
 type LoadState = "loading" | "loaded" | "error";
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function FeedSidebarContainer({
   selectedFeedId,
   onSelectFeed,
   refreshSignal,
   onLoadError,
+  onFeedRemoved,
 }: FeedSidebarContainerProps) {
   const services = useServices();
   const [items, setItems] = useState<FeedSidebarItem[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Distinct from `errorMessage` (a LOAD failure, which replaces the whole
+  // list with an error state) -- a failed removal should not blow away an
+  // otherwise successfully loaded list, just surface its own message
+  // alongside it.
+  const [removeErrorMessage, setRemoveErrorMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -82,9 +101,31 @@ export function FeedSidebarContainer({
     }
   }, [services, onLoadError]);
 
+  const [feedListVersion, entryStateVersion] = refreshSignal ?? [0, 0];
+
   useEffect(() => {
     void load();
-  }, [load, refreshSignal]);
+    // Depends on the two DESTRUCTURED numbers, not on `refreshSignal`'s own
+    // array identity -- a parent handing down a fresh-but-equal-valued
+    // tuple on every render (as `App.tsx`'s `feedSidebarSignal` does) must
+    // not cause a re-fetch on every unrelated re-render.
+  }, [load, feedListVersion, entryStateVersion]);
+
+  const handleRemoveFeed = useCallback(
+    (feedId: string) => {
+      setRemoveErrorMessage(null);
+      services.localStore
+        .deleteFeed(feedId)
+        .then(() => {
+          setItems((current) => current.filter((item) => item.id !== feedId));
+          onFeedRemoved?.(feedId);
+        })
+        .catch((error: unknown) => {
+          setRemoveErrorMessage(describeError(error));
+        });
+    },
+    [services, onFeedRemoved],
+  );
 
   if (loadState === "loading") {
     return (
@@ -106,5 +147,19 @@ export function FeedSidebarContainer({
     );
   }
 
-  return <FeedSidebar feeds={items} selectedFeedId={selectedFeedId} onSelectFeed={onSelectFeed} />;
+  return (
+    <>
+      {removeErrorMessage && (
+        <p class="feed-sidebar__remove-error" role="alert">
+          Could not remove this feed. {removeErrorMessage}
+        </p>
+      )}
+      <FeedSidebar
+        feeds={items}
+        selectedFeedId={selectedFeedId}
+        onSelectFeed={onSelectFeed}
+        onRemoveFeed={handleRemoveFeed}
+      />
+    </>
+  );
 }

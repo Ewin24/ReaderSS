@@ -106,6 +106,44 @@ export function createIdbLocalStore(db: ReaderSSDatabase): LocalStorePort {
         throw error;
       }
     },
+    async addFeedWithEntries(feed, entries) {
+      // Mirrors `putFeedWithEntries`'s own transaction pattern (requests
+      // queued synchronously, explicit try/catch/abort), but the FIRST
+      // queued request is `feedsStore.add()` rather than `.put()` --
+      // IndexedDB's own atomic, keyed uniqueness check (Finding 2, Slice
+      // 10b correction round). `add()` rejects with `ConstraintError` if a
+      // record with this key already exists, and per the IndexedDB spec an
+      // unhandled request error auto-aborts the transaction, so nothing
+      // queued here (the `add` itself, or any entry `put`) survives either
+      // way -- the same rollback guarantee `putFeedWithEntries` documents.
+      const tx = db.transaction(["feeds", "entries"], "readwrite");
+      const feedsStore = tx.objectStore("feeds");
+      const entriesStore = tx.objectStore("entries");
+      const pending: Promise<unknown>[] = [];
+      try {
+        pending.push(feedsStore.add(feed));
+        for (const entry of entries) {
+          assertValidEntryState(entry);
+          pending.push(entriesStore.put(entry));
+        }
+        await Promise.all(pending);
+        await tx.done;
+        return "created";
+      } catch (error) {
+        try {
+          tx.abort();
+        } catch {
+          // Already aborting/aborted -- the common `ConstraintError` case,
+          // where the native default action already began the abort before
+          // this catch block runs. Nothing further to do.
+        }
+        await Promise.allSettled([...pending, tx.done]);
+        if (error instanceof DOMException && error.name === "ConstraintError") {
+          return "duplicate";
+        }
+        throw error;
+      }
+    },
     async deleteEntry(id) {
       await db.delete("entries", id);
     },

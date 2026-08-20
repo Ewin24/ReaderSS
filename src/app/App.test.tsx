@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { App } from "./App";
 import type { AppEntry, AppFeed } from "./types";
 import type { ClockPort } from "../ports/ClockPort";
+import type { FeedParserPort } from "../ports/FeedParserPort";
 import type { FeedSourcePort } from "../ports/FeedSourcePort";
 import type { LocalStorePort } from "../ports/LocalStorePort";
 import { createEntry, type Entry } from "../domain/models/Entry";
@@ -49,6 +50,7 @@ const entries: AppEntry[] = [
 
 const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
 const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
+const feedParser: FeedParserPort = { parse: vi.fn() };
 
 /**
  * `App` now always renders through `EntryListContainer`/`ReadingPaneContainer`
@@ -95,6 +97,7 @@ function makeLocalStore(domainFeeds: Feed[], domainEntries: Entry[]): LocalStore
     listFeedsByFolder: vi.fn(),
     putFeed: vi.fn(),
     putFeedWithEntries: vi.fn(),
+    addFeedWithEntries: vi.fn().mockResolvedValue("created"),
     deleteFeed: vi.fn(),
     getEntry: vi.fn(async (id: string) => domainEntries.find((entry) => entry.id === id)),
     getEntryByFeedAndGuid: vi.fn(),
@@ -121,7 +124,7 @@ function renderApp(
   localStore: LocalStorePort = makeLocalStore(feeds.map(toDomainFeed), entries.map(toDomainEntry)),
 ) {
   return render(
-    <ServicesProvider services={{ localStore, clock, feedSource }}>
+    <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
       <SanitizerContext.Provider value={identitySanitize}>
         <App {...props} />
       </SanitizerContext.Provider>
@@ -282,7 +285,7 @@ describe("App", () => {
       const localStore = makeLocalStore([feed], [entry]);
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
           <SanitizerContext.Provider value={identitySanitize}>
             <App />
           </SanitizerContext.Provider>
@@ -318,7 +321,7 @@ describe("App", () => {
       const localStore = makeLocalStore([feed], [entry]);
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
           <SanitizerContext.Provider value={identitySanitize}>
             <App />
           </SanitizerContext.Provider>
@@ -344,7 +347,7 @@ describe("App", () => {
       );
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
           <SanitizerContext.Provider value={identitySanitize}>
             <App />
           </SanitizerContext.Provider>
@@ -366,7 +369,7 @@ describe("App", () => {
       localStore.listFeeds = vi.fn().mockRejectedValue(new Error("IDB closed"));
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
           <SanitizerContext.Provider value={identitySanitize}>
             <App />
           </SanitizerContext.Provider>
@@ -415,7 +418,7 @@ describe("App", () => {
       };
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
           <SanitizerContext.Provider value={identitySanitize}>
             <App />
           </SanitizerContext.Provider>
@@ -435,6 +438,295 @@ describe("App", () => {
       await waitFor(() =>
         expect(screen.getByRole("button", { name: /hacker news, 0 unread/i })).toBeInTheDocument(),
       );
+    });
+
+    it("keeps an entry unread after an explicit 'mark as unread' click -- no silent auto-revert (Finding 1, Slice 10b correction round)", async () => {
+      stubMatchMedia(true);
+      const feed = toDomainFeed({ id: "feed-1", title: "Hacker News", folder: null });
+      // Starts READ, not unread: opening it must not itself write anything,
+      // so the only `putEntry` call this test expects is the explicit
+      // "Mark as unread" click below.
+      let currentEntry = toDomainEntry({
+        id: "entry-1",
+        feedId: "feed-1",
+        title: "IndexedDB in practice",
+        publishedAt: "2026-08-18T09:00:00.000Z",
+        read: 1,
+        starred: 0,
+        link: "https://example.com/1",
+        summary: null,
+        content: "Full article body.",
+      });
+
+      // A stateful, mutating fake -- same shape as the sidebar-badge test
+      // above -- is REQUIRED to reproduce this bug: `App.tsx`'s
+      // `handleEntryChanged` re-fetches the entry via `getEntry` after every
+      // write and feeds the fresh object back into `ReadingPaneContainer`'s
+      // `entry` prop, exactly as production does. A STATIC `entry` prop
+      // (what `ReadingPaneContainer.test.tsx` alone uses) can never
+      // reproduce this: the auto-mark effect's dependency on the live entry
+      // never changes if the entry prop itself never changes.
+      const localStore: LocalStorePort = {
+        ...makeLocalStore([feed], []),
+        getFeed: vi.fn(async () => feed),
+        listFeeds: vi.fn(async () => [feed]),
+        getEntry: vi.fn(async () => currentEntry),
+        listEntriesByFeed: vi.fn(async (feedId: string) =>
+          feedId === currentEntry.feedId ? [currentEntry] : [],
+        ),
+        listEntriesByFeedPublished: vi.fn(async (feedId: string) =>
+          feedId === currentEntry.feedId ? [currentEntry] : [],
+        ),
+        putEntry: vi.fn(async (updated) => {
+          currentEntry = updated;
+        }),
+      };
+
+      render(
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+          <SanitizerContext.Provider value={identitySanitize}>
+            <App />
+          </SanitizerContext.Provider>
+        </ServicesProvider>,
+      );
+
+      const entryButton = await screen.findByRole("button", { name: /^indexeddb in practice/i });
+      fireEvent.click(entryButton);
+
+      const markUnreadButton = await screen.findByRole("button", { name: /^mark as unread$/i });
+      fireEvent.click(markUnreadButton);
+
+      // Wait for the explicit write to settle AND for it to have genuinely
+      // round-tripped back through App's live state -- the list item's own
+      // accessible name reaching "...unread" proves the round trip
+      // completed, not just that `putEntry` was called once.
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: /^indexeddb in practice,.*unread$/i }),
+        ).toBeInTheDocument(),
+      );
+
+      // The bug this test exists to catch: the auto-mark-on-open effect,
+      // watching the LIVE `entry` prop, sees the fresh `read: 0` value and
+      // silently writes it straight back to `read: 1`. Give any such stray
+      // effect/re-render several turns to run, then assert the SETTLED
+      // state -- not merely that "unread" was reached at some point, which
+      // a `waitFor` can catch on a transient flicker before a revert.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(
+        screen.getByRole("button", { name: /^indexeddb in practice,.*unread$/i }),
+      ).toBeInTheDocument();
+      expect(localStore.putEntry).toHaveBeenCalledTimes(1);
+      expect(currentEntry.read).toBe(0);
+    });
+  });
+
+  /**
+   * Task 10.15/10.17: `AddFeedContainer` and `RefreshContainer` mounted
+   * inside `App.tsx`. Uses a stateful fake `LocalStorePort` (mutated by
+   * `putFeedWithEntries`/`putEntry`/`deleteFeed`, the same way the real
+   * `idbLocalStore` would be) rather than the shared static-array
+   * `makeLocalStore` helper, since these flows genuinely change which feeds
+   * and entries exist.
+   */
+  describe("add-feed, refresh, and remove-feed mounted in App (Unit 10b)", () => {
+    function makeStatefulLocalStore(): LocalStorePort {
+      let feedsState: Feed[] = [];
+      let entriesState: Entry[] = [];
+      return {
+        getFeed: vi.fn(async (id: string) => feedsState.find((f) => f.id === id)),
+        listFeeds: vi.fn(async () => feedsState),
+        listFeedsByFolder: vi.fn(),
+        putFeed: vi.fn(async (feed: Feed) => {
+          feedsState = [...feedsState.filter((f) => f.id !== feed.id), feed];
+        }),
+        putFeedWithEntries: vi.fn(async (feed: Feed, entries: readonly Entry[]) => {
+          feedsState = [...feedsState.filter((f) => f.id !== feed.id), feed];
+          entriesState = [...entriesState, ...entries];
+        }),
+        addFeedWithEntries: vi.fn(async (feed: Feed, entries: readonly Entry[]) => {
+          if (feedsState.some((f) => f.id === feed.id)) {
+            return "duplicate" as const;
+          }
+          feedsState = [...feedsState, feed];
+          entriesState = [...entriesState, ...entries];
+          return "created" as const;
+        }),
+        deleteFeed: vi.fn(async (id: string) => {
+          feedsState = feedsState.filter((f) => f.id !== id);
+          entriesState = entriesState.filter((e) => e.feedId !== id);
+        }),
+        getEntry: vi.fn(async (id: string) => entriesState.find((e) => e.id === id)),
+        getEntryByFeedAndGuid: vi.fn(),
+        putEntry: vi.fn(async (entry: Entry) => {
+          entriesState = entriesState.map((e) => (e.id === entry.id ? entry : e));
+        }),
+        deleteEntry: vi.fn(),
+        listEntriesByFeed: vi.fn(async (feedId: string) =>
+          entriesState.filter((e) => e.feedId === feedId),
+        ),
+        listEntriesByFeedPublished: vi.fn(async (feedId: string) =>
+          entriesState
+            .filter((e) => e.feedId === feedId)
+            .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
+        ),
+        listEntriesByPublished: vi.fn(),
+        listUnreadEntries: vi.fn(),
+        listStarredEntries: vi.fn(),
+        getConfigValue: vi.fn(),
+        putConfigValue: vi.fn(),
+      } as unknown as LocalStorePort;
+    }
+
+    it("adding a feed selects it and shows its entries, without a page reload", async () => {
+      stubMatchMedia(true);
+      const localStore = makeStatefulLocalStore();
+      const newFeedUrl = "https://example.com/new-feed.xml";
+      const feedSourceStub: FeedSourcePort = {
+        fetchFeed: vi.fn().mockResolvedValue({
+          status: "updated",
+          body: "<rss/>",
+          contentType: "application/rss+xml",
+          etag: null,
+          lastModified: null,
+        }),
+      };
+      const feedParserStub: FeedParserPort = {
+        parse: vi.fn().mockReturnValue({
+          status: "parsed",
+          feed: {
+            title: "New Feed",
+            siteUrl: null,
+            entries: [
+              createEntry({
+                id: `${newFeedUrl}:1`,
+                feedId: newFeedUrl,
+                contentHash: "hash-1",
+                title: "First post",
+                link: "https://example.com/first-post",
+                publishedAt: "2026-08-19T09:00:00.000Z",
+                fetchedAt: "2026-08-19T09:00:00.000Z",
+              }),
+            ],
+          },
+        }),
+      };
+
+      render(
+        <ServicesProvider
+          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
+        >
+          <SanitizerContext.Provider value={identitySanitize}>
+            <App />
+          </SanitizerContext.Provider>
+        </ServicesProvider>,
+      );
+
+      await screen.findByText(/no feeds yet/i);
+      fireEvent.input(screen.getByRole("textbox", { name: /feed url/i }), {
+        target: { value: newFeedUrl },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /^add feed$/i }));
+
+      expect(await screen.findByText(/added.*new feed/i)).toBeInTheDocument();
+      // Anchored exactly to the sidebar's own accessible-name format
+      // (`"${title}, ${count} unread"`) -- a looser `/new feed.*unread/i`
+      // also matches the entry row's accessible name ("First post, New
+      // Feed, published ..., unread"), which is ambiguous once the entry
+      // itself renders.
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: /^new feed, \d+ unread$/i })).toHaveAttribute(
+          "aria-current",
+          "true",
+        ),
+      );
+      expect(await screen.findByRole("button", { name: /^first post/i })).toBeInTheDocument();
+    });
+
+    it("refreshing reloads the selected feed's entries and the sidebar's unread count", async () => {
+      stubMatchMedia(true);
+      const localStore = makeStatefulLocalStore();
+      const feed = toDomainFeed({ id: "feed-1", title: "Hacker News", folder: null });
+      await localStore.putFeed(feed);
+      const feedSourceStub: FeedSourcePort = {
+        fetchFeed: vi.fn().mockResolvedValue({
+          status: "updated",
+          body: "<rss/>",
+          contentType: "application/rss+xml",
+          etag: null,
+          lastModified: null,
+        }),
+      };
+      const feedParserStub: FeedParserPort = {
+        parse: vi.fn().mockReturnValue({
+          status: "parsed",
+          feed: {
+            title: "Hacker News",
+            siteUrl: null,
+            entries: [
+              createEntry({
+                id: "feed-1:1",
+                feedId: "feed-1",
+                contentHash: "hash-1",
+                title: "Freshly refreshed post",
+                link: "https://example.com/refreshed",
+                publishedAt: "2026-08-19T09:00:00.000Z",
+                fetchedAt: "2026-08-19T09:00:00.000Z",
+              }),
+            ],
+          },
+        }),
+      };
+
+      render(
+        <ServicesProvider
+          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
+        >
+          <SanitizerContext.Provider value={identitySanitize}>
+            <App />
+          </SanitizerContext.Provider>
+        </ServicesProvider>,
+      );
+
+      await screen.findByRole("button", { name: /hacker news.*unread/i });
+      fireEvent.click(screen.getByRole("button", { name: /^refresh$/i }));
+
+      expect(await screen.findByRole("button", { name: /^freshly refreshed post/i })).toBeInTheDocument();
+    });
+
+    it("removing the selected feed clears the selection and its entry list", async () => {
+      stubMatchMedia(true);
+      const localStore = makeStatefulLocalStore();
+      const feed = toDomainFeed({ id: "feed-1", title: "Hacker News", folder: null });
+      await localStore.putFeed(feed);
+      const feedSourceStub: FeedSourcePort = { fetchFeed: vi.fn() };
+      const feedParserStub: FeedParserPort = { parse: vi.fn() };
+
+      render(
+        <ServicesProvider
+          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
+        >
+          <SanitizerContext.Provider value={identitySanitize}>
+            <App />
+          </SanitizerContext.Provider>
+        </ServicesProvider>,
+      );
+
+      await screen.findByRole("button", { name: /hacker news.*unread/i });
+      // Wait for the feed to genuinely be the SELECTED feed (its entry list
+      // has settled) before removing it -- otherwise this assertion could
+      // pass by coincidence, catching App's default-selection effect still
+      // mid-flight rather than proving removal actually cleared it.
+      await screen.findByText(/this feed has no entries yet/i);
+
+      fireEvent.click(screen.getByRole("button", { name: /^remove hacker news$/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^confirm removal$/i }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole("button", { name: /hacker news/i })).not.toBeInTheDocument(),
+      );
+      expect(await screen.findByText(/add a feed to see its entries/i)).toBeInTheDocument();
     });
   });
 });
