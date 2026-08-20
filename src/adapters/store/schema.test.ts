@@ -132,6 +132,37 @@ describe("openReaderSSDatabase — destructive-reset escape hatch", () => {
     const preserved = await openDb.get("config", "github");
     expect(preserved?.value).toEqual({ repoOwner: "me", repoName: "notes" });
   });
+
+  it("preserves BOTH config/github and config/visual across a destructive reset", async () => {
+    const { openDB } = await import("idb");
+    const newer = await openDB(DB_NAME, 2, {
+      upgrade(db) {
+        db.createObjectStore("feeds", { keyPath: "id" });
+        db.createObjectStore("config", { keyPath: "key" });
+      },
+    });
+    await newer.put("config", {
+      key: "github",
+      value: { repoOwner: "me", repoName: "notes" },
+    });
+    await newer.put("config", {
+      key: "visual",
+      value: { theme: "dark", fontFamily: "serif", fontSize: "lg", navMode: "paginated" },
+    });
+    newer.close();
+
+    openDb = await openReaderSSDatabase();
+
+    const github = await openDb.get("config", "github");
+    expect(github?.value).toEqual({ repoOwner: "me", repoName: "notes" });
+    const visual = await openDb.get("config", "visual");
+    expect(visual?.value).toEqual({
+      theme: "dark",
+      fontFamily: "serif",
+      fontSize: "lg",
+      navMode: "paginated",
+    });
+  });
 });
 
 describe("openReaderSSDatabase — narrowed destructive-reset catch", () => {
