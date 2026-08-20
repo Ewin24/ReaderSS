@@ -4,9 +4,9 @@ import { useRef } from "preact/hooks";
  * Presentational form for subscribing to a feed by URL. Props in, callback
  * out -- no port or service import, matching every other `ui/components/**` in the repo.
  * `AddFeedContainer` is what actually calls `subscribeToFeed` and derives
- * this `status` prop from its six-way `SubscribeToFeedResult`.
+ * this `status` prop from `SubscribeToFeedResult`.
  *
- * Each of the six outcomes below renders a textually distinct, specific
+ * Every outcome below renders a textually distinct, specific
  * message (never a shared generic fallback) -- this project's review history
  * repeatedly rejected collapsing `unreachable` and `not-a-feed` into one
  * "something went wrong" string, since they are different, actionable

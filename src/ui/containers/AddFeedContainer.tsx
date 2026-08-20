@@ -6,7 +6,7 @@
  * same pattern `EntryListContainer`/`ReadingPaneContainer` already use for
  * `toggleRead`/`toggleStar`.
  *
- * Maps each of `SubscribeToFeedResult`'s six outcomes onto `AddFeedForm`'s
+ * Maps every `SubscribeToFeedResult` outcome onto `AddFeedForm`'s
  * `status` prop with a specific, composed message:
  * `not-a-feed` and `unreachable` both name the submitted URL, since the
  * result itself does not carry it -- the message must state
@@ -21,7 +21,7 @@ import { AddFeedForm, type AddFeedFormStatus } from "../components/AddFeedForm";
 
 export interface AddFeedContainerProps {
   /** Called only when the subscription actually succeeds, with the new
-   * feed's id -- never for any of the other five outcomes. */
+   * feed's id -- never for any failure outcome. */
   onSubscribed?: (feedId: string) => void;
 }
 
