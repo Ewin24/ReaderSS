@@ -23,9 +23,13 @@ import type { ReadingPaneEntry } from "../ui/components/ReadingPane";
 import { DESKTOP_QUERY, useMediaQuery } from "./useMediaQuery";
 import { useRefreshSignals } from "./useRefreshSignals";
 import { useServices } from "./providers/ServicesContext";
+import { useVisualSettings } from "./providers/SettingsProvider";
+import { SettingsPanel } from "../ui/components/SettingsPanel";
 import { describeError } from "../domain/errors/describeError";
+import { clampPage, pageCount, paginate } from "../domain/visual/pagination";
 import type { AppEntry, AppFeed } from "./types";
 import "../styles/grid.css";
+import "../styles/visual.css";
 
 export interface AppProps {
   /** Test-only override: when supplied, `App` renders exactly this data
@@ -77,6 +81,10 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   const services = useServices();
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
   const usingOverride = feedsOverride !== undefined;
+  const { settings, updateSettings } = useVisualSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const paginated = settings.navMode === "paginated";
 
   const [storeFeeds, setStoreFeeds] = useState<AppFeed[]>([]);
   const [storeEntries, setStoreEntries] = useState<AppEntry[]>([]);
@@ -206,6 +214,34 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
       })),
     [feedEntries, selectedFeed],
   );
+
+  // Reset the pagination page whenever the data shown or the navigation mode
+  // changes (design D5: "page state in App, reset on feed/entries/navMode
+  // change"). A ref guards against Preact re-running an effect whose deps are
+  // referentially equal, so advancing pages (which changes none of these) can
+  // never be clobbered by a spurious reset.
+  const prevResetRef = useRef<{
+    feedId: string | null;
+    entries: readonly AppEntry[] | null;
+    paginated: boolean;
+  } | null>(null);
+  const prevReset = prevResetRef.current;
+  useEffect(() => {
+    if (
+      prevReset &&
+      prevReset.feedId === selectedFeedId &&
+      prevReset.entries === allEntries &&
+      prevReset.paginated === paginated
+    ) {
+      return;
+    }
+    prevResetRef.current = { feedId: selectedFeedId, entries: allEntries, paginated };
+    setListPage(1);
+  }, [selectedFeedId, allEntries, paginated]);
+
+  const totalPageCount = pageCount(entryListItems);
+  const currentPage = clampPage(listPage, totalPageCount);
+  const visibleEntryItems = paginated ? paginate(entryListItems, currentPage) : entryListItems;
 
   // Only used in override/test mode: the store-driven sidebar renders
   // through `FeedSidebarContainer` below instead, which loads its own feed
@@ -366,7 +402,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     }
     return (
       <EntryListContainer
-        entries={entryListItems}
+        entries={visibleEntryItems}
         selectedEntryId={selectedEntryId}
         onSelectEntry={handleSelectEntry}
         listRef={entryListRef}
@@ -377,6 +413,11 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
         }
         onEntryChanged={handleEntryChanged}
         onToggleError={handleToggleError}
+        page={paginated ? currentPage : undefined}
+        pageCount={paginated ? totalPageCount : undefined}
+        onPrevPage={paginated ? () => setListPage((p) => clampPage(p - 1, totalPageCount)) : undefined}
+        onNextPage={paginated ? () => setListPage((p) => clampPage(p + 1, totalPageCount)) : undefined}
+        onScrollEnd={paginated ? () => setListPage((p) => clampPage(p + 1, totalPageCount)) : undefined}
       />
     );
   })();
@@ -391,6 +432,22 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
       <div class="app-shell__actions">
         <AddFeedContainer onSubscribed={handleFeedSubscribed} />
         <RefreshContainer onRefreshed={handleRefreshCompleted} />
+        <button
+          type="button"
+          class="app-shell__settings-toggle"
+          aria-expanded={settingsOpen}
+          aria-controls="app-settings-panel"
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          {settingsOpen ? "Close settings" : "Settings"}
+        </button>
+      </div>
+      <div
+        id="app-settings-panel"
+        class="app-shell__settings"
+        hidden={!settingsOpen}
+      >
+        <SettingsPanel settings={settings} onUpdateSettings={updateSettings} />
       </div>
       {usingOverride ? (
         <FeedSidebar

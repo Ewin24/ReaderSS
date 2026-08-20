@@ -1,0 +1,65 @@
+/*
+ * Visual token layer for the reader. A CSS-variable theme applied via
+ * data-attributes on the <html> element (set by src/app/theme.ts), read by
+ * the attribute selectors below. Tokens are used by every component through
+ * `var(--…)` rather than hardcoded colors/fonts, so a single switch to
+ * `html[data-theme="dark"]` retints the whole surface.
+ *
+ * All fonts are system stacks only (spec font-config): the app's CSP
+ * `font-src 'self'` forbids remote/webfonts, so no @font-face / external
+ * import lives here.
+ */
+
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f5;
+  --color-text: #1a1a1a;
+  --color-text-muted: #6b6b6b;
+  --color-accent: #2563eb;
+  --color-border: #d4d4d4;
+  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-size-base: 1rem;
+}
+
+html[data-theme="dark"] {
+  --color-bg: #111111;
+  --color-surface: #1c1c1e;
+  --color-text: #f2f2f2;
+  --color-text-muted: #9a9a9a;
+  --color-accent: #60a5fa;
+  --color-border: #333333;
+}
+
+/* System font-family stacks (no remote fonts — CSP `font-src 'self'`). */
+html[data-font="serif"] {
+  --font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+html[data-font="sans"] {
+  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html[data-font="mono"] {
+  --font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+/* Built-in font-size scale, applied to the base and inherited everywhere. */
+html[data-font-size="sm"] {
+  --font-size-base: 0.875rem;
+}
+
+html[data-font-size="lg"] {
+  --font-size-base: 1.125rem;
+}
+
+html[data-font-size="xl"] {
+  --font-size-base: 1.25rem;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+}
