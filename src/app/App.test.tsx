@@ -656,11 +656,15 @@ describe("App", () => {
       first.unmount();
 
       // Re-render with a different (smaller) entry set → page resets to 1.
+      // With only one page the footer is hidden entirely (single-page
+      // behavior), which also confirms the page is no longer on page 2.
       const smaller = makeManyEntries(5);
       const localStore = localStoreWithNavMode("paginated", smaller);
       renderApp({ feeds, entries: smaller }, localStore);
 
-      expect(await screen.findByText("Page 1 of 1")).toBeInTheDocument();
+      expect(await screen.findByRole("list", { name: "Entries" })).toBeInTheDocument();
+      expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /next page/i })).not.toBeInTheDocument();
     });
 
     it("shows the full list with no slicing when navMode is auto", async () => {

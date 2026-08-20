@@ -1,4 +1,5 @@
 import type { RefObject } from "preact";
+import { useEffect, useRef } from "preact/hooks";
 import { EntryListItem, type EntryListItemData } from "../EntryListItem/EntryListItem";
 import { isAtViewportEnd } from "../../../domain/visual/pagination";
 
@@ -48,13 +49,38 @@ export function EntryList({
   }
 
   const paginated = page !== undefined && pageCount !== undefined && pageCount > 0;
+  // Improvement C: a single page (or fewer) has nothing to paginate, so hide
+  // the footer instead of showing a "Page 1 of 1" bar with two dead buttons.
+  const showPagination = paginated && pageCount !== undefined && pageCount > 1;
   const atFirstPage = paginated && page === 1;
   const atLastPage = paginated && page === pageCount;
+
+  // BUG B: keep the scroll container at the top whenever the page changes so
+  // each page starts at its beginning instead of landing mid/bottom. The ref is
+  // owned here (so the reset works regardless of callers) and also forwarded to
+  // `listRef` for the App's focus-fallback target.
+  const listRefInternal = useRef<HTMLUListElement | null>(null);
+  const setListRef = (el: HTMLUListElement | null) => {
+    listRefInternal.current = el;
+    if (listRef) listRef.current = el;
+  };
+  useEffect(() => {
+    if (listRefInternal.current) {
+      listRefInternal.current.scrollTop = 0;
+    }
+  }, [page]);
 
   const handleScroll = (event: Event) => {
     if (!onScrollEnd) return;
     const el = event.currentTarget as HTMLUListElement;
-    if (isAtViewportEnd(el.scrollTop, el.clientHeight, el.scrollHeight)) {
+    // BUG A: only advance when the container actually overflows AND the user is
+    // at the real end. A short page that does not fill the viewport has
+    // scrollHeight <= clientHeight; without this guard any scroll event (or a
+    // mount-triggered one) would spuriously jump pages.
+    if (
+      el.scrollHeight > el.clientHeight &&
+      isAtViewportEnd(el.scrollTop, el.clientHeight, el.scrollHeight)
+    ) {
       onScrollEnd();
     }
   };
@@ -65,7 +91,7 @@ export function EntryList({
         class="entry-list"
         aria-label="Entries"
         tabIndex={-1}
-        ref={listRef}
+        ref={setListRef}
         onScroll={onScrollEnd ? handleScroll : undefined}
       >
         {entries.map((entry) => (
@@ -79,7 +105,7 @@ export function EntryList({
           />
         ))}
       </ul>
-      {paginated && (
+      {showPagination && (
         <nav class="entry-list__pagination" aria-label="Pagination">
           <span class="entry-list__pagination-page">
             Page {page} of {pageCount}

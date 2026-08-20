@@ -106,6 +106,68 @@ describe("EntryList", () => {
       expect(onScrollEnd).not.toHaveBeenCalled();
     });
 
+    it("does NOT auto-advance on scroll when the page does not overflow the container (short page)", () => {
+      const onScrollEnd = vi.fn();
+      const { container } = render(
+        <EntryList entries={entries} selectedEntryId={null} onSelectEntry={vi.fn()} onScrollEnd={onScrollEnd} />,
+      );
+
+      const list = container.querySelector("ul.entry-list") as HTMLElement;
+      // Content fits (or is shorter than) the viewport → no real overflow to scroll.
+      Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
+      Object.defineProperty(list, "scrollHeight", { value: 50, configurable: true });
+
+      fireEvent.scroll(list, { target: { scrollTop: 0 } });
+      expect(onScrollEnd).not.toHaveBeenCalled();
+    });
+
+    it("advances at the real end of a long overflowing page", () => {
+      const onScrollEnd = vi.fn();
+      const { container } = render(
+        <EntryList entries={entries} selectedEntryId={null} onSelectEntry={vi.fn()} onScrollEnd={onScrollEnd} />,
+      );
+
+      const list = container.querySelector("ul.entry-list") as HTMLElement;
+      // Long page: content overflows the viewport and the user is at the bottom.
+      Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
+      Object.defineProperty(list, "scrollHeight", { value: 100, configurable: true });
+
+      fireEvent.scroll(list, { target: { scrollTop: 50 } });
+      expect(onScrollEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it("resets scrollTop to 0 when the page changes", () => {
+      const { container, rerender } = render(
+        <EntryList
+          entries={entries}
+          selectedEntryId={null}
+          onSelectEntry={vi.fn()}
+          page={1}
+          pageCount={3}
+          onPrevPage={vi.fn()}
+          onNextPage={vi.fn()}
+        />,
+      );
+
+      const list = container.querySelector("ul.entry-list") as HTMLElement;
+      list.scrollTop = 120;
+      expect(list.scrollTop).toBe(120);
+
+      rerender(
+        <EntryList
+          entries={entries}
+          selectedEntryId={null}
+          onSelectEntry={vi.fn()}
+          page={2}
+          pageCount={3}
+          onPrevPage={vi.fn()}
+          onNextPage={vi.fn()}
+        />,
+      );
+
+      expect(list.scrollTop).toBe(0);
+    });
+
     it("renders a footer with 'Page X of Y' and disabled prev at page 1", () => {
       render(
         <EntryList
@@ -140,6 +202,24 @@ describe("EntryList", () => {
       expect(screen.getByText("Page 3 of 3")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /previous page/i })).toBeEnabled();
       expect(screen.getByRole("button", { name: /next page/i })).toBeDisabled();
+    });
+
+    it("hides the pagination footer entirely when there is only one page", () => {
+      render(
+        <EntryList
+          entries={entries}
+          selectedEntryId={null}
+          onSelectEntry={vi.fn()}
+          page={1}
+          pageCount={1}
+          onPrevPage={vi.fn()}
+          onNextPage={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /previous page/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /next page/i })).not.toBeInTheDocument();
     });
 
     it("fires onPrevPage/onNextPage on their buttons", () => {
