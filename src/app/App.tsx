@@ -27,6 +27,12 @@ import { useVisualSettings } from "./providers/SettingsProvider";
 import { SettingsPanel } from "../ui/components/SettingsPanel";
 import { describeError } from "../domain/errors/describeError";
 import { clampPage, pageCount, paginate } from "../domain/visual/pagination";
+import {
+  contentPageCount,
+  splitTopLevelHtmlBlocks,
+} from "../domain/visual/contentPagination";
+import { shortHash } from "../domain/identity/hash";
+import { useSanitizer } from "../ui/components/SafeHtml";
 import type { AppEntry, AppFeed } from "./types";
 import "../styles/grid.css";
 import "../styles/visual.css";
@@ -84,7 +90,11 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   const { settings, updateSettings } = useVisualSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [listPage, setListPage] = useState(1);
+  const [contentPage, setContentPage] = useState(1);
   const paginated = settings.navMode === "paginated";
+  // The same single sanitize choke point SafeHtml uses (DOMPurify), needed
+  // here only to derive the content page count from the clean body.
+  const sanitize = useSanitizer();
 
   const [storeFeeds, setStoreFeeds] = useState<AppFeed[]>([]);
   const [storeEntries, setStoreEntries] = useState<AppEntry[]>([]);
@@ -242,6 +252,50 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   const totalPageCount = pageCount(entryListItems);
   const currentPage = clampPage(listPage, totalPageCount);
   const visibleEntryItems = paginated ? paginate(entryListItems, currentPage) : entryListItems;
+
+  // Content pagination (navMode=paginated): the reading pane's body is split
+  // into pages. `contentBody` is what `ReadingPane` renders (`content` else
+  // `summary`); `contentHash` keys the reset effect so opening a different
+  // entry or a changed body lands on page 1. The page count is derived from
+  // the CLEAN body (single sanitize choke point, same cacheKey ReadingPane
+  // uses so the LRU memo dedupes) -- we never split raw feed HTML here.
+  const contentBody = selectedEntry ? (selectedEntry.content ?? selectedEntry.summary) : null;
+  const contentHash = contentBody ? shortHash(contentBody) : null;
+  const contentPageCountValue = useMemo(() => {
+    if (!paginated || contentBody === null || contentHash === null || selectedEntry === null) {
+      return 1;
+    }
+    const cleanBody = sanitize(contentBody, `${selectedEntry.id}:${contentHash}`);
+    return contentPageCount(splitTopLevelHtmlBlocks(cleanBody));
+  }, [paginated, contentBody, contentHash, selectedEntry, sanitize]);
+
+  // Reset the content page whenever the selected entry or its content changes
+  // (mirrors the list's ref-guarded reset, D5). A ref guards against Preact
+  // re-running an effect whose deps are referentially equal, so advancing
+  // content pages can never be clobbered by a spurious reset. Note: the
+  // navigation mode (`paginated`) is deliberately NOT a dependency -- it flips
+  // once when the settings load asynchronously on mount, and depending on it
+  // would race a user's page advance against that initial load, silently
+  // reverting it to page 1.
+  const prevContentResetRef = useRef<{
+    entryId: string | null;
+    contentHash: string | null;
+  } | null>(null);
+  const prevContentReset = prevContentResetRef.current;
+  useEffect(() => {
+    if (
+      prevContentReset &&
+      prevContentReset.entryId === selectedEntryId &&
+      prevContentReset.contentHash === contentHash
+    ) {
+      return;
+    }
+    prevContentResetRef.current = { entryId: selectedEntryId, contentHash };
+    setContentPage(1);
+  }, [selectedEntryId, contentHash]);
+
+  const contentPaginationActive = paginated && contentPageCountValue > 1;
+  const clampedContentPage = clampPage(contentPage, contentPageCountValue);
 
   // Only used in override/test mode: the store-driven sidebar renders
   // through `FeedSidebarContainer` below instead, which loads its own feed
@@ -471,6 +525,23 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
           headingRef={readingHeadingRef}
           onEntryChanged={handleEntryChanged}
           onToggleError={handleToggleError}
+          page={contentPaginationActive ? clampedContentPage : undefined}
+          pageCount={contentPaginationActive ? contentPageCountValue : undefined}
+          onPrevPage={
+            contentPaginationActive
+              ? () => setContentPage((p) => clampPage(p - 1, contentPageCountValue))
+              : undefined
+          }
+          onNextPage={
+            contentPaginationActive
+              ? () => setContentPage((p) => clampPage(p + 1, contentPageCountValue))
+              : undefined
+          }
+          onScrollEnd={
+            contentPaginationActive
+              ? () => setContentPage((p) => clampPage(p + 1, contentPageCountValue))
+              : undefined
+          }
         />
       )}
     </div>

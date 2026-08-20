@@ -1,8 +1,15 @@
 import type { RefObject } from "preact";
+import { useEffect, useRef } from "preact/hooks";
 import { formatPublished } from "../formatPublished";
 import { toSafeHref } from "../../../domain/url/safeUrl";
 import { shortHash } from "../../../domain/identity/hash";
-import { SafeHtml } from "../SafeHtml";
+import { isAtViewportEnd } from "../../../domain/visual/pagination";
+import {
+  CONTENT_PAGE_SIZE,
+  contentPageBlocks,
+  splitTopLevelHtmlBlocks,
+} from "../../../domain/visual/contentPagination";
+import { SafeHtml, useSanitizer } from "../SafeHtml";
 
 export interface ReadingPaneEntry {
   id: string;
@@ -33,14 +40,28 @@ export interface ReadingPaneProps {
    */
   onToggleRead?: (entryId: string) => void;
   onToggleStar?: (entryId: string) => void;
+  /**
+   * Content pagination (navMode=paginated). When `page`/`pageCount` are
+   * supplied (and `pageCount > 1`) the pane's body is split into top-level
+   * blocks and shown one page at a time, with a footer nav and advance-at-end
+   * on the pane's scroll container; when absent the pane renders the whole
+   * body as before (backward compatible).
+   */
+  page?: number;
+  pageCount?: number;
+  onPrevPage?: () => void;
+  onNextPage?: () => void;
+  onScrollEnd?: () => void;
 }
 
 interface ReadingPaneContentProps {
   entry: ReadingPaneEntry;
   headingRef?: RefObject<HTMLHeadingElement>;
+  page?: number;
+  pageCount?: number;
 }
 
-function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
+function ReadingPaneContent({ entry, headingRef, page, pageCount }: ReadingPaneContentProps) {
   // A feed can independently supply full content, only a summary, or
   // neither, in which case summary-only entries link to the original.
   // These two booleans classify which of those three states
@@ -51,6 +72,7 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
   const hasNoContent = entry.content === null && entry.summary === null;
   const body = entry.content ?? entry.summary;
   const safeLink = toSafeHref(entry.link);
+  const paginated = page !== undefined && pageCount !== undefined && pageCount > 1;
 
   return (
     <article class="reading-pane__article">
@@ -67,20 +89,15 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
       {hasNoContent && (
         <p class="reading-pane__notice">This feed provided no content for this entry.</p>
       )}
-      {body && (
-        // The single enforced sanitization choke point:
-        // `body` is raw, feed-supplied HTML and must never reach the DOM
-        // through plain text interpolation -- Preact escapes `{body}`, so
-        // feed markup would otherwise show as literal source text instead
-        // of rendering. `cacheKey` is derived here, inside
-        // this component, rather than plumbed through `ReadingPaneEntry` as
-        // a separate `contentHash` field: it is entirely a function of
-        // `entry.id` plus the exact string being rendered, so hashing it
-        // locally keeps the sanitizer's LRU memo correctly invalidated --
-        // keyed on `entryId + contentHash` -- without widening
-        // this component's props or every caller that builds one.
-        <SafeHtml html={body} cacheKey={`${entry.id}:${shortHash(body)}`} />
-      )}
+      {body &&
+        (paginated ? (
+          <PaginatedContent body={body} entryId={entry.id} page={page} />
+        ) : (
+          // The single enforced sanitization choke point: `body` is raw,
+          // feed-supplied HTML and must never reach the DOM through plain
+          // text interpolation.
+          <SafeHtml html={body} cacheKey={`${entry.id}:${shortHash(body)}`} />
+        ))}
       {safeLink && (
         <a
           class="reading-pane__original-link"
@@ -95,9 +112,81 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
   );
 }
 
-export function ReadingPane({ entry, onBack, headingRef, onToggleRead, onToggleStar }: ReadingPaneProps) {
+/**
+ * Paginated body renderer (navMode=paginated). SAFETY: we split the CLEAN,
+ * already-sanitized output of the single choke point (`useSanitizer` here is
+ * the same DOMPurify SafeHtml uses) into top-level blocks, rejoin the current
+ * page, and re-render through `<SafeHtml>` with a page-extended `cacheKey`.
+ * The splitter never runs on raw feed HTML, and re-sanitizing an already-clean
+ * page is idempotent-safe. Mounted only when there is body content AND more
+ * than one page, so consumers without a sanitizer in the non-paginated path
+ * are unaffected.
+ */
+function PaginatedContent({
+  body,
+  entryId,
+  page,
+}: {
+  body: string;
+  entryId: string;
+  page: number;
+}) {
+  const sanitize = useSanitizer();
+  const baseKey = `${entryId}:${shortHash(body)}`;
+  const cleanBody = sanitize(body, baseKey);
+  const blocks = splitTopLevelHtmlBlocks(cleanBody);
+  const htmlToRender = contentPageBlocks(blocks, page, CONTENT_PAGE_SIZE).join("");
+  return <SafeHtml html={htmlToRender} cacheKey={`${baseKey}:p${page}`} />;
+}
+
+export function ReadingPane({
+  entry,
+  onBack,
+  headingRef,
+  onToggleRead,
+  onToggleStar,
+  page,
+  pageCount,
+  onPrevPage,
+  onNextPage,
+  onScrollEnd,
+}: ReadingPaneProps) {
+  const paginated = page !== undefined && pageCount !== undefined && pageCount > 1;
+  const atFirstPage = paginated && page === 1;
+  const atLastPage = paginated && page === pageCount;
+
+  // BUG B (mirrors EntryList): keep the pane's scroll container at the top on
+  // every page change so each page starts at its beginning instead of landing
+  // mid/bottom from the previous page's scroll position.
+  const paneRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (paneRef.current) {
+      paneRef.current.scrollTop = 0;
+    }
+  }, [page]);
+
+  const handleScroll = (event: Event) => {
+    if (!onScrollEnd) return;
+    const el = event.currentTarget as HTMLElement;
+    // BUG A (mirrors EntryList): only advance when the container actually
+    // overflows AND the user is at the real end. A page that does not fill
+    // the viewport has scrollHeight <= clientHeight; without this guard any
+    // scroll event would spuriously jump pages.
+    if (
+      el.scrollHeight > el.clientHeight &&
+      isAtViewportEnd(el.scrollTop, el.clientHeight, el.scrollHeight)
+    ) {
+      onScrollEnd();
+    }
+  };
+
   return (
-    <section class="reading-pane" aria-label="Reading pane">
+    <section
+      class="reading-pane"
+      aria-label="Reading pane"
+      ref={paneRef}
+      onScroll={onScrollEnd ? handleScroll : undefined}
+    >
       {onBack && (
         <button type="button" class="reading-pane__back" onClick={onBack}>
           Back to list
@@ -127,9 +216,37 @@ export function ReadingPane({ entry, onBack, headingRef, onToggleRead, onToggleS
         </div>
       )}
       {entry ? (
-        <ReadingPaneContent entry={entry} headingRef={headingRef} />
+        <ReadingPaneContent
+          entry={entry}
+          headingRef={headingRef}
+          page={page}
+          pageCount={pageCount}
+        />
       ) : (
         <p class="empty-state">Select an entry to start reading.</p>
+      )}
+      {entry && paginated && (
+        <nav class="reading-pane__pagination" aria-label="Pagination">
+          <span class="reading-pane__pagination-page">
+            Page {page} of {pageCount}
+          </span>
+          <button
+            type="button"
+            aria-label="Previous page"
+            disabled={atFirstPage}
+            onClick={onPrevPage}
+          >
+            Prev
+          </button>
+          <button
+            type="button"
+            aria-label="Next page"
+            disabled={atLastPage}
+            onClick={onNextPage}
+          >
+            Next
+          </button>
+        </nav>
       )}
     </section>
   );

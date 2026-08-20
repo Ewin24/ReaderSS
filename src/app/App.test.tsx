@@ -678,6 +678,100 @@ describe("App", () => {
     });
   });
 
+  describe("content pagination (navMode=paginated, the reading pane's body split into pages)", () => {
+    function localStoreWithNavMode(navMode: "auto" | "paginated", many: AppEntry[]) {
+      const store = makeLocalStore(feeds.map(toDomainFeed), many.map(toDomainEntry));
+      store.getConfigValue = vi.fn(async <T,>(key: string): Promise<T | undefined> => {
+        if (key === "visual") return { navMode } as T;
+        return undefined;
+      }) as LocalStorePort["getConfigValue"];
+      return store;
+    }
+
+    function makeLongEntry(): AppEntry {
+      return {
+        id: "entry-long",
+        feedId: "feed-1",
+        title: "A long article",
+        publishedAt: "2026-08-18T09:00:00.000Z",
+        read: 0,
+        starred: 0,
+        link: "https://example.com/long",
+        summary: null,
+        content:
+          "<h1>Title</h1><p>P1</p><p>P2</p><p>P3</p><p>P4</p><p>P5</p><p>P6</p><p>P7</p><p>P8</p><p>P9</p><p>P10</p>",
+      };
+    }
+
+    it("splits the selected entry's body into pages and renders only page 1 with a footer", async () => {
+      stubMatchMedia(true);
+      const many = [makeLongEntry()];
+      renderApp({ feeds, entries: many }, localStoreWithNavMode("paginated", many));
+
+      fireEvent.click(screen.getByRole("button", { name: /^a long article/i }));
+
+      // Page 1 shows the first page's blocks; the footer reveals the total.
+      // Wait for the footer first: it renders in the same commit as the
+      // paginated page-1 body, so it is the deterministic signal that the
+      // (asynchronously loaded) paginated mode is active before we assert on
+      // the page content.
+      expect(await screen.findByText(/page 1 of \d+/i)).toBeInTheDocument();
+      expect(screen.getByText("P1")).toBeInTheDocument();
+      // A block beyond the first page is not rendered.
+      expect(screen.queryByText("P10")).not.toBeInTheDocument();
+    });
+
+    it("advances to the next content page when Next is clicked", async () => {
+      stubMatchMedia(true);
+      const many = [makeLongEntry()];
+      renderApp({ feeds, entries: many }, localStoreWithNavMode("paginated", many));
+
+      fireEvent.click(screen.getByRole("button", { name: /^a long article/i }));
+      await screen.findByText(/page 1 of \d+/i);
+
+      fireEvent.click(screen.getByRole("button", { name: /next page/i }));
+
+      expect(await screen.findByText(/page 2 of \d+/i)).toBeInTheDocument();
+    });
+
+    it("resets the content page to 1 when a different entry is opened", async () => {
+      stubMatchMedia(true);
+      const long = makeLongEntry();
+      const short = {
+        ...long,
+        id: "entry-short",
+        title: "A short article",
+        link: "https://example.com/short",
+        content: "<p>Only one block.</p>",
+      };
+      const many = [long, short];
+      renderApp({ feeds, entries: many }, localStoreWithNavMode("paginated", many));
+
+      fireEvent.click(screen.getByRole("button", { name: /^a long article/i }));
+      await screen.findByText(/page 1 of \d+/i);
+      fireEvent.click(screen.getByRole("button", { name: /next page/i }));
+      await screen.findByText(/page 2 of \d+/i);
+
+      fireEvent.click(screen.getByRole("button", { name: /^a short article/i }));
+
+      // The short entry has a single page → no footer (page effectively reset).
+      expect(await screen.findByText("Only one block.")).toBeInTheDocument();
+      expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
+    });
+
+    it("does not paginate the pane content when navMode is auto", async () => {
+      stubMatchMedia(true);
+      const many = [makeLongEntry()];
+      renderApp({ feeds, entries: many }, localStoreWithNavMode("auto", many));
+
+      fireEvent.click(screen.getByRole("button", { name: /^a long article/i }));
+
+      // Whole body rendered, no content-pagination footer.
+      expect(await screen.findByText("P10")).toBeInTheDocument();
+      expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
+    });
+  });
+
   /**
    * `AddFeedContainer` and `RefreshContainer` mounted
    * inside `App.tsx`. Uses a stateful fake `LocalStorePort` (mutated by
