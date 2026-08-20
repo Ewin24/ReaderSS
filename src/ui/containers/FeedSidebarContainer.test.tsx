@@ -114,7 +114,7 @@ describe("FeedSidebarContainer", () => {
     );
 
     // `.*unread` scopes these to the SELECT button specifically -- every row
-    // now also renders a "Remove <title>" button (task 10.18-10.19), which
+    // now also renders a "Remove <title>" button, which
     // would otherwise ambiguously match the same substring.
     await screen.findByRole("button", { name: /hacker news.*unread/i });
     expect(listFeeds).toHaveBeenCalledTimes(1);
@@ -244,8 +244,8 @@ describe("FeedSidebarContainer", () => {
 
   /**
    * `deleteFeed` (idbLocalStore, cascading entry deletion) was previously
-   * unreachable from the UI. Removal is destructive and irreversible
-   * (feed-subscriptions spec, "Removal is confirmed before it happens"), so
+   * unreachable from the UI. Removal is destructive and irreversible, and
+   * must be confirmed before it happens, so
    * the remove control MUST require an explicit confirmation step before
    * `services.localStore.deleteFeed` is ever called.
    */

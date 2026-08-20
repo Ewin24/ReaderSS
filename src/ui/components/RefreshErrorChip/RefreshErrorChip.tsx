@@ -4,8 +4,8 @@ export interface RefreshErrorChipProps {
 }
 
 /**
- * Per-feed refresh failure (feed-fetching spec "Refresh failure is visible,
- * never silent" and "Partial refresh failure"). `role="alert"` makes each
+ * Per-feed refresh failure: visible, never silent, isolated from other
+ * feeds' failures. `role="alert"` makes each
  * chip announce itself immediately -- distinct from the future
  * OfflineBanner, which represents an already-known, passive connectivity
  * state and is

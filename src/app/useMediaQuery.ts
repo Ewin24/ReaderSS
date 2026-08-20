@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 
 /**
- * The desktop layout breakpoint (entry-reading spec, "Responsive layout").
+ * The desktop layout breakpoint.
  * This is the ONE place the pixel value is defined in application code;
  * App.tsx imports `DESKTOP_QUERY` from here rather than declaring its own
  * copy. `grid.css`'s `@media (min-width: ...)` rule is a second, unavoidable

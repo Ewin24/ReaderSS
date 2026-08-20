@@ -89,8 +89,9 @@ npm run test:watch    # watch mode
 npm run test:coverage # with coverage (enforced 70% threshold)
 ```
 
-This project follows strict TDD (`openspec/config.yaml`, `strict_tdd: true`):
-every behavior change starts with a failing test.
+This project follows strict TDD: every behavior change starts with a failing
+test, and the coverage threshold is enforced by the test command rather than
+merely documented.
 
 ## Lint, typecheck, format
 
@@ -110,6 +111,5 @@ npm run format
 - `shared/` — code imported by both `src/**` and `worker/**` (e.g. the relay
   error-code taxonomy in `shared/feedErrorCodes.ts`); each side is otherwise
   import-isolated from the other (`eslint.config.js`).
-- `openspec/` — the spec-driven design process for this project (proposal,
-  specs, design, tasks) — see `openspec/changes/rss-reader-mvp/` for the
-  full history.
+- `.github/workflows/` — CI: lint, typecheck, and the test suite on every
+  push and pull request; deploys to Cloudflare from the default branch.

@@ -1,12 +1,12 @@
 /**
- * Feedsmith -> domain `Entry[]` (design.md §1, §3). The only production
- * module that imports `feedsmith`. Handles RSS 2.0, RSS 1.0/RDF, Atom, and
- * JSON Feed (feed-fetching spec, "Multi-format parsing on the client").
+ * Feedsmith -> domain `Entry[]`. The only production module that imports
+ * `feedsmith`. Handles RSS 2.0, RSS 1.0/RDF, Atom, and JSON Feed
+ * ("Multi-format parsing on the client").
  *
  * Content passed through here is the feed's RAW, pre-sanitization HTML.
  * Nothing in this file sanitizes anything -- sanitization happens once, at
- * render time, in `src/ui/components/SafeHtml` (design.md §5). This module
- * only normalizes shape and derives identity/dedup keys.
+ * render time, in `src/ui/components/SafeHtml`. This module only normalizes
+ * shape and derives identity/dedup keys.
  */
 import { parseFeed } from "feedsmith";
 import type { Atom, DeepPartial, Json, Rdf, Rss } from "feedsmith/types";
@@ -47,7 +47,7 @@ function escapePlainTextToHtml(text: string): string {
 function buildEntries(feedId: string, fetchedAt: string, raws: readonly RawEntry[]): Entry[] {
   const entries: Entry[] = [];
   for (const raw of raws) {
-    // feed-fetching spec requires "a resolvable link" on every normalized
+    // "A resolvable link" is required on every normalized
     // entry; an item that supplies neither its own link nor a feed-level
     // fallback has nothing for the reading pane to open, so it is dropped
     // rather than persisted with a link the app can never resolve.
@@ -193,7 +193,7 @@ function mapJson(feed: DeepPartial<Json.Feed<string>>, params: ParseFeedBodyPara
 
 /**
  * `FeedParserPort`-conformant object for production wiring (composition
- * root only, per design.md §1). `services/**` depends on `FeedParserPort`,
+ * root only). `services/**` depends on `FeedParserPort`,
  * never on this module directly -- `parseFeedBody` stays a plain exported
  * function (rather than only a private implementation of the object below)
  * so tests can call it directly without going through the port indirection.

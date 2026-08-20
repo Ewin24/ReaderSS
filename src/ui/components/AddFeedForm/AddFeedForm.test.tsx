@@ -4,7 +4,7 @@ import { AddFeedForm, type AddFeedFormStatus } from "./AddFeedForm";
 
 /**
  * Presentational only: a URL input, a submit callback, and a `status` prop.
- * The six `subscribeToFeed` outcomes (feed-subscriptions spec) MUST each
+ * The six `subscribeToFeed` outcomes MUST each
  * render a textually distinct, actionable message -- collapsing specific
  * failures into one shared fallback string is a real regression risk, so
  * `unreachable` and `not-a-feed` (two completely different problems for the

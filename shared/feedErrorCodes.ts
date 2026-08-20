@@ -1,6 +1,6 @@
 /**
- * Single source of truth for the relay's error-code taxonomy (design.md §2's
- * error-code table). Lives outside both `src/**` and `worker/**` because the
+ * Single source of truth for the relay's error-code taxonomy. Lives outside
+ * both `src/**` and `worker/**` because the
  * layer-zone ESLint rule (`import-x/no-restricted-paths` in eslint.config.js)
  * forbids either side from importing the other directly. `worker/routes/feed.ts`
  * (the producer) and `src/ports/FeedSourcePort.ts` (the consumer) both import

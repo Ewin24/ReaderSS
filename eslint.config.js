@@ -21,8 +21,8 @@ export default tseslint.config(
       },
     },
     rules: {
-      // The single enforced DOMPurify choke point (design.md §5, layer 1 of
-      // 3). The sink list also covers document.write/parseFromString/
+      // The single enforced DOMPurify choke point (layer 1 of 3). The sink
+      // list also covers document.write/parseFromString/
       // createContextualFragment/setHTMLUnsafe/srcdoc, and the computed
       // bracket-access form of every property-name sink below, e.g.
       // `el["innerHTML"]`. A computed key built from string concatenation,
@@ -90,7 +90,7 @@ export default tseslint.config(
           ],
         },
       ],
-      // One-way dependency rule (design.md §1): domain <- ports <- services <- ui/containers,
+      // One-way dependency rule: domain <- ports <- services <- ui/containers,
       // adapters <- domain/ports only, ui/components presentational-only, worker isolated.
       "import-x/no-restricted-paths": [
         "error",
@@ -165,7 +165,7 @@ export default tseslint.config(
   },
   {
     // The single file-level override for the choke point itself
-    // (design.md §5, enforcement layer 1 of 3). Scoped to the exact file,
+    // (enforcement layer 1 of 3). Scoped to the exact file,
     // not a broader glob, and not a per-line eslint-disable comment (which
     // the guard test explicitly rejects if it names this rule).
     files: ["src/ui/components/SafeHtml/SafeHtml.tsx"],
@@ -183,8 +183,7 @@ export default tseslint.config(
     // SafeHtml.tsx itself:
     //   - SafeHtml.test.tsx (ui/components/** importing adapters/security/**
     //     directly) renders through the REAL DomPurifySanitizer instead of a
-    //     mock, per design.md §7's "assert the resulting DOM, not the
-    //     string" testing philosophy.
+    //     mock, to assert the resulting DOM, not the string.
     //   - subscribeToFeed.test.ts (services/** importing adapters/feed/**
     //     directly) exercises the real feedParser instead of a mock, for
     //     the same reason.

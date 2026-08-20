@@ -105,7 +105,7 @@ describe("parseFeedBody", () => {
 
     // Same feed, same underlying items, two different fetch runs: repeated
     // refreshes must not create duplicate entries for a guid-less item
-    // (feed-fetching spec, "Entry without a stable id").
+    // ("Entry without a stable id").
     expect(first.feed.entries.map((e) => e.id)).toEqual(second.feed.entries.map((e) => e.id));
     expect(new Set(first.feed.entries.map((e) => e.id)).size).toBe(2);
   });

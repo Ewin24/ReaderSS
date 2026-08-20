@@ -1,9 +1,8 @@
 import { useRef } from "preact/hooks";
 
 /**
- * Presentational form for subscribing to a feed by URL (feed-subscriptions
- * spec, "Add a feed by URL"; task 10.12). Props in, callback out -- no port
- * or service import, matching every other `ui/components/**` in the repo.
+ * Presentational form for subscribing to a feed by URL. Props in, callback
+ * out -- no port or service import, matching every other `ui/components/**` in the repo.
  * `AddFeedContainer` is what actually calls `subscribeToFeed` and derives
  * this `status` prop from its six-way `SubscribeToFeedResult`.
  *
@@ -97,8 +96,8 @@ export function AddFeedForm({ status, onSubmit }: AddFeedFormProps) {
         // Deliberately `type="text"`, not `type="url"`: HTML5's native URL
         // constraint validation would silently swallow the submit event for
         // an invalid value before `onSubmit` ever runs, bypassing
-        // `subscribeToFeed`'s own client-side check (feed-subscriptions
-        // spec, "Malformed URL": rejected before any network request) and
+        // `subscribeToFeed`'s own client-side check -- a malformed URL must
+        // be rejected before any network request -- and
         // its `invalid-url` status -- which is what actually drives this
         // form's message, and needs to run for every submission, not just
         // the ones the browser's own heuristic considers well-formed.

@@ -1,6 +1,6 @@
 /**
- * Composition root construction (design.md §1: "main.tsx is the only
- * construction site"). This is the module that instantiates the production
+ * Composition root construction: `main.tsx` is the only
+ * construction site. This is the module that instantiates the production
  * adapters for real -- every other layer stays behind a port interface,
  * exercised only by test doubles. `main.tsx` calls `buildServices()` once at
  * startup and threads the result through `ServicesProvider` (the `Services`

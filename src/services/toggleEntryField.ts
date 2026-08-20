@@ -5,7 +5,7 @@
  * else stamp and write -- differing only in which value/timestamp field pair
  * they touch, with two duplicated test suites substituting field names. This
  * factors the shared body into one helper parameterized by that field pair,
- * the same pattern design.md §4 already established for `resolveField`
+ * the same pattern already established for `resolveField`
  * (one merge resolver, applied to both `read` and `starred`). `toggleRead`
  * and `toggleStar` stay as thin, separately named, separately typed wrappers
  * so call sites remain unambiguous about which field they mean.

@@ -2,7 +2,7 @@ import type { Entry } from "./Entry";
 
 /**
  * The syncable subset of an Entry: only the fields that participate in the
- * GitHub `state.json` merge (design.md §4). Kept as its own model so the
+ * GitHub `state.json` merge. Kept as its own model so the
  * merge layer never has to know about content fields.
  */
 export interface EntryState {

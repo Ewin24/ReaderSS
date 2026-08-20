@@ -2,7 +2,7 @@ import type { Entry } from "../domain/models/Entry";
 import type { Feed } from "../domain/models/Feed";
 
 /**
- * Port over the local IndexedDB cache (design.md §3). `adapters/store/idbLocalStore.ts`
+ * Port over the local IndexedDB cache. `adapters/store/idbLocalStore.ts`
  * is the only production implementation; `domain` and `services` depend on this
  * interface only, never on `idb` directly.
  */

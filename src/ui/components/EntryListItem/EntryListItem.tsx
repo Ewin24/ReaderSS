@@ -14,8 +14,7 @@ export interface EntryListItemProps {
   selected: boolean;
   onSelect: (entryId: string) => void;
   /**
-   * Read/unread and star/unstar toggles (entry-reading spec "Read state" /
-   * "Starred state", Amendment C). Both are OPTIONAL: this component stays
+   * Read/unread and star/unstar toggles. Both are OPTIONAL: this component stays
    * presentational (props in, callbacks out) and renders no toggle control
    * at all when a handler is omitted, rather than wiring a button to a
    * no-op. `EntryListContainer` is what actually supplies these, bound to
@@ -37,8 +36,8 @@ export function EntryListItem({
   // The visible <time> element below is inside an aria-hidden wrapper (kept
   // hidden to avoid double-announcing title/feed/date), so the published
   // time is included directly in the accessible name instead - otherwise a
-  // screen-reader user could not perceive it at all, even though the spec
-  // requires the list to show published time per entry.
+  // screen-reader user could not perceive it at all, even though the list
+  // must show published time per entry.
   const accessibleName = `${entry.title}, ${entry.feedTitle}, published ${publishedLabel}, ${readLabel}${
     entry.starred === 1 ? ", starred" : ""
   }`;

@@ -62,7 +62,7 @@ describe("EntryListItem", () => {
     );
   });
 
-  describe("read/unread and star toggles (Amendment C)", () => {
+  describe("read/unread and star toggles", () => {
     function renderWithToggles(overrides: Partial<typeof entry> = {}) {
       const onSelect = vi.fn();
       const onToggleRead = vi.fn();

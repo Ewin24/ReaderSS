@@ -30,7 +30,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * This module's one production call site is now `services/refreshFeeds.ts`, run after
- * every successful per-feed refresh (design.md §3's placement). The initial
+ * every successful per-feed refresh. The initial
  * `subscribeToFeed.ts` ingestion path still does not call it (see that
  * file's header comment) -- a large feed's very first fetch is unbounded
  * until its next refresh.
@@ -42,7 +42,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * Wiring real quota-guard telemetry is a stated follow-up, not a claim this
  * module makes about itself.
  *
- * Pure selector for retention/pruning (design.md §3), applied per feed:
+ * Pure selector for retention/pruning, applied per feed:
  * 1. Never prune a starred entry, or an unread entry within the
  *    never-prune window.
  * 2. Age cap: drop a read, unstarred entry once it crosses ageCapDays.

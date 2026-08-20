@@ -13,7 +13,7 @@ describe("RefreshErrorChip", () => {
   it("announces itself immediately via role=\"alert\"", () => {
     render(<RefreshErrorChip feedTitle="Example Blog" errorMessage="feed returned 404" />);
 
-    // feed-fetching spec, "Refresh failure is visible, never silent": a
+    // Refresh failure must be visible, never silent: a
     // per-feed refresh failure is urgent enough to announce immediately
     // (role="alert"). This test pins ONLY this component's own role. The
     // planned comparison against a passive, already-known offline state

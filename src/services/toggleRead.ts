@@ -1,7 +1,6 @@
 /**
  * The ONLY writer of `Entry.read` / `Entry.readChangedAt` in the whole
- * codebase (design.md §4's pseudocode; Amendment C, entry-reading spec
- * "Read state"). `readChangedAt` records the moment the field last
+ * codebase ("Read state"). `readChangedAt` records the moment the field last
  * *changed*, not when it became true -- the merge (`resolveField`)
  * resolves conflicts by last-write-wins on this timestamp, so a value
  * forged by any other code path (refresh, merge, initial load) would make a

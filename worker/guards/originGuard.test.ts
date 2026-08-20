@@ -20,7 +20,7 @@ describe("validateOrigin — Origin header present", () => {
   });
 
   /**
-   * MANDATORY per tasks.md 4.3: a spoofed Origin identical to the
+   * MANDATORY: a spoofed Origin identical to the
    * deployment origin still passes this check. `curl -H "Origin: <url>"`
    * can set this header to anything. Origin/Referer/Sec-Fetch-* are
    * enforced by browsers, not by the server receiving them — this guard

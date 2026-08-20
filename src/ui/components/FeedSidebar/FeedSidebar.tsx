@@ -4,8 +4,7 @@ export interface FeedSidebarItem {
   id: string;
   title: string;
   folder: string | null;
-  /** feed-subscriptions spec, "List feeds with metadata".
-   * Computed by whoever supplies this list -- `FeedSidebarContainer` for
+  /** Computed by whoever supplies this list -- `FeedSidebarContainer` for
    * the real, store-backed sidebar; `App.tsx` for its test-only override
    * path -- never by this presentational component itself. */
   unreadCount: number;
@@ -16,13 +15,12 @@ export interface FeedSidebarProps {
   selectedFeedId: string | null;
   onSelectFeed: (feedId: string) => void;
   /**
-   * Removal (feed-subscriptions spec, "Remove a feed"; task 10.18-10.19).
-   * OPTIONAL, same rationale as `EntryListItem`'s toggle props: no handler
-   * means no remove control renders at all, rather than a button wired to a
-   * no-op. When supplied, `onRemoveFeed` is called only AFTER the user
-   * confirms -- the confirmation step itself (spec: "Removal is confirmed
-   * before it happens") lives here, as local, ephemeral UI state (which row
-   * is mid-confirmation), not a port call, so this component stays
+   * Removal. OPTIONAL, same rationale as `EntryListItem`'s toggle props: no
+   * handler means no remove control renders at all, rather than a button
+   * wired to a no-op. When supplied, `onRemoveFeed` is called only AFTER the
+   * user confirms -- removal is confirmed before it happens, and that
+   * confirmation step lives here, as local, ephemeral UI state (which row is
+   * mid-confirmation), not a port call, so this component stays
    * presentational.
    */
   onRemoveFeed?: (feedId: string) => void;

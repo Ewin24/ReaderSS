@@ -1,6 +1,6 @@
 /*
- * App shell layout: mobile-first CSS Grid, plain CSS only (design.md §1,
- * proposal "lightweight" non-negotiable). Below the desktop breakpoint the
+ * App shell layout: mobile-first CSS Grid, plain CSS only (a "lightweight"
+ * non-negotiable). Below the desktop breakpoint the
  * feed sidebar, entry list, and reading pane stack in a single column and
  * only one of entry list / reading pane is rendered at a time (App.tsx
  * owns that navigation state); at or above the breakpoint all three panes

@@ -1,8 +1,8 @@
 /**
- * Caller-origin check for the feed relay (design.md §2). `Origin` (falling
+ * Caller-origin check for the feed relay. `Origin` (falling
  * back to `Referer`) must equal the Worker's own deployment origin, taken
  * from the incoming request's own URL — the app and the API are served
- * from the same origin (design.md "Technical Approach"), so there is no
+ * from the same origin, so there is no
  * separately configured allow-list to keep in sync.
  *
  * Stated plainly, because this is easy to over-trust: `Origin`, `Referer`,
@@ -13,7 +13,7 @@
  * visitor's browser forge these headers); it is NOT authentication and
  * does not verify the caller's identity. See
  * worker/guards/originGuard.test.ts for the tests that encode this
- * limitation directly, and design.md §2's residual-risk table.
+ * limitation directly.
  */
 
 export type OriginGuardResult =

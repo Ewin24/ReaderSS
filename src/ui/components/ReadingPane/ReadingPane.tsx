@@ -23,9 +23,8 @@ export interface ReadingPaneProps {
    * standalone renders/tests are unaffected. */
   headingRef?: RefObject<HTMLHeadingElement>;
   /**
-   * Explicit "Mark as unread" action in the pane header (entry-reading spec
-   * "Mark as unread is reachable as an explicit action", Amendment C) and
-   * the star/unstar toggle. Both optional, same rationale as
+   * Explicit "Mark as unread" action in the pane header, reachable as an
+   * explicit action, and the star/unstar toggle. Both optional, same rationale as
    * `EntryListItem`'s toggle props: no handler means no control rendered,
    * rather than a button wired to a no-op. Opening an entry marking it read
    * is NOT this component's job -- that side effect belongs to whatever
@@ -43,8 +42,8 @@ interface ReadingPaneContentProps {
 
 function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
   // A feed can independently supply full content, only a summary, or
-  // neither (entry-reading spec, "Summary-only entries link to the
-  // original"). These two booleans classify which of those three states
+  // neither, in which case summary-only entries link to the original.
+  // These two booleans classify which of those three states
   // this entry is in so the correct notice text is shown below; `body`
   // picks whichever of content/summary is present, and is falsy when both
   // are null.
@@ -69,7 +68,7 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
         <p class="reading-pane__notice">This feed provided no content for this entry.</p>
       )}
       {body && (
-        // The single enforced sanitization choke point (design.md §5):
+        // The single enforced sanitization choke point:
         // `body` is raw, feed-supplied HTML and must never reach the DOM
         // through plain text interpolation -- Preact escapes `{body}`, so
         // feed markup would otherwise show as literal source text instead
@@ -77,8 +76,8 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
         // this component, rather than plumbed through `ReadingPaneEntry` as
         // a separate `contentHash` field: it is entirely a function of
         // `entry.id` plus the exact string being rendered, so hashing it
-        // locally keeps the sanitizer's LRU memo correctly invalidated
-        // (design.md §5: keyed on `entryId + contentHash`) without widening
+        // locally keeps the sanitizer's LRU memo correctly invalidated --
+        // keyed on `entryId + contentHash` -- without widening
         // this component's props or every caller that builds one.
         <SafeHtml html={body} cacheKey={`${entry.id}:${shortHash(body)}`} />
       )}

@@ -7,8 +7,8 @@ const FIXTURES_DIR = join(import.meta.dirname, "..", "..", "test", "fixtures", "
 const RSS2_FIXTURE = readFileSync(join(FIXTURES_DIR, "rss2.xml"), "utf8");
 
 /**
- * Proves `buildServices()` wires REAL production adapters, not stubs
- * (design.md §1, "main.tsx is the only construction site"; task 10.1). Each
+ * Proves `buildServices()` wires REAL production adapters, not stubs --
+ * `main.tsx` is the only construction site. Each
  * test below exercises actual behaviour of the underlying adapter rather
  * than just asserting a property exists on the returned object, so a
  * regression that wires a no-op stand-in in place of a real adapter fails

@@ -1,5 +1,5 @@
 /**
- * Worker entrypoint and route table (design.md §1: "/api/* first, else
+ * Worker entrypoint and route table ("/api/* first, else
  * env.ASSETS"; wrangler.toml's `run_worker_first = ["/api/*"]` sends every
  * /api/* request here before any static-asset fallback). `/api/health` is
  * not built yet — an unmatched /api/* path returns its

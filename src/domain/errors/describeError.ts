@@ -5,9 +5,9 @@
  * `RefreshContainer.tsx`, `AddFeedContainer.tsx`, `toggleEntryField.ts`, and
  * `bootstrap.tsx` -- each a separate chance to miss a future change to how
  * errors get normalized (e.g. unwrapping a domain error type, redacting a
- * field). Lives in `domain/` (design.md §1's dependency-free innermost
- * layer, importable from every other layer without violating the one-way
- * `import-x/no-restricted-paths` zones) rather than nearer any one caller.
+ * field). Lives in `domain/`, the dependency-free innermost layer,
+ * importable from every other layer without violating the one-way
+ * `import-x/no-restricted-paths` zones, rather than nearer any one caller.
  */
 export function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

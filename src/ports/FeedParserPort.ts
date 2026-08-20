@@ -2,7 +2,7 @@ import type { Entry } from "../domain/models/Entry";
 
 /**
  * Port over turning a feed's raw response body into normalized domain
- * entries (design.md §1, §3). The only production implementation is
+ * entries. The only production implementation is
  * `adapters/feed/feedParser.ts`'s `feedParser` export, which depends on the
  * third-party `feedsmith` library -- the reason this logic lives under
  * `adapters/**` despite doing no I/O of its own, and therefore the reason
@@ -18,7 +18,7 @@ export interface ParsedFeed {
 
 /**
  * feedsmith throws an `Error` both when nothing about the input resembles
- * any supported feed format (feed-subscriptions spec, "URL is not a feed")
+ * any supported feed format ("URL is not a feed")
  * and when a recognized root element contains genuinely broken markup its
  * underlying parser cannot tolerate. Distinguishing those two would require
  * parsing feedsmith's error message text, which is not a stable contract,

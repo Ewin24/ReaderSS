@@ -80,7 +80,7 @@ async function parseRelayError(response: Response): Promise<{ code: FeedFetchErr
 
 /**
  * Client-side implementation of FeedSourcePort: calls the Worker relay at
- * `/api/feed` (design.md §2). The relay is same-origin, so this is a plain
+ * `/api/feed`. The relay is same-origin, so this is a plain
  * same-origin fetch — no separate base URL configuration. The fetch carries
  * its own bounded `AbortSignal.timeout(CLIENT_TIMEOUT_MS)`, distinct from
  * (and slightly larger than) the relay's own server-side deadline, so a hung

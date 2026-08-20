@@ -49,7 +49,7 @@ describe("handleFeedRequest — origin and target validation", () => {
 });
 
 describe("handleFeedRequest — content-type allow-list", () => {
-  test("accepts text/plain (design.md §2: allowed for misconfigured feed servers)", async () => {
+  test("accepts text/plain (allowed for misconfigured feed servers)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("<rss></rss>", { status: 200, headers: { "Content-Type": "text/plain" } })),

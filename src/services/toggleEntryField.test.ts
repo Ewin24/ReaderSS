@@ -52,7 +52,7 @@ function makeLocalStore(entry: Entry | undefined, overrides: Partial<LocalStoreP
 /**
  * The full behavioral matrix, written once and instantiated for both field
  * bindings -- the same shape as
- * `resolveField`'s property tests in design.md §4, which shrinks rather
+ * `resolveField`'s property tests, which shrinks rather
  * than grows the test matrix. `toggleRead`
  * and `toggleStar` keep only thin per-field tests asserting the correct
  * field pair is bound; this file owns every shared case.

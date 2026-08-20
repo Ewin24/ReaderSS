@@ -1,11 +1,12 @@
 /**
- * Refreshes every subscribed feed (design.md §2's conditional-refresh and
- * offline-failure sequence diagrams; §3's identity/dedup, unstable-GUID, and
- * retention rules; feed-fetching spec "Per-feed error isolation" and
- * "Refresh failure is visible, never silent").
+ * Refreshes every subscribed feed: implements conditional-refresh and
+ * offline-failure handling, identity/dedup, unstable-GUID detection, and
+ * retention, with per-feed error isolation so refresh failure is visible,
+ * never silent.
  *
- * Write-path rule 3 (design.md §4): this is the file that matters most for
- * it. A refresh is never a user action, so it must never call
+ * Write-path rule: only `toggleRead`/`toggleStar` may stamp a change
+ * timestamp, and this is the file that matters most for it. A refresh is
+ * never a user action, so it must never call
  * `toggleRead`/`toggleStar` and must never touch `read`/`readChangedAt`/
  * `starred`/`starredChangedAt` on an entry that already exists locally --
  * whatever the user did to it survives untouched, even when the entry's
@@ -105,7 +106,7 @@ async function refreshOneFeed(deps: RefreshFeedsDeps, feed: Feed): Promise<FeedR
   });
 
   if (fetchResult.status === "error") {
-    // Honest failure (design.md §2): lastFetchedAt advances -- the attempt
+    // Honest failure: lastFetchedAt advances -- the attempt
     // is recorded -- but lastSuccessAt does NOT. The UI can never claim
     // freshness it does not have.
     await deps.localStore.putFeed({
@@ -134,7 +135,7 @@ async function refreshOneFeed(deps: RefreshFeedsDeps, feed: Feed): Promise<FeedR
   const existingEntries = await deps.localStore.listEntriesByFeed(feed.id);
   const existingById = new Map(existingEntries.map((entry) => [entry.id, entry]));
 
-  // Unstable-GUID defense (design.md §3): only evaluated once the feed has a
+  // Unstable-GUID defense: only evaluated once the feed has a
   // prior successful fetch to compare against.
   let unstableGuid = feed.unstableGuid;
   if (feed.lastSuccessAt !== null && existingEntries.length > 0) {
@@ -155,7 +156,7 @@ async function refreshOneFeed(deps: RefreshFeedsDeps, feed: Feed): Promise<FeedR
       continue;
     }
     if (existing.contentHash === incoming.contentHash) {
-      // No write on unchanged content (design.md §3): avoids churning
+      // No write on unchanged content: avoids churning
       // updatedAt and burning IDB transactions on every poll.
       continue;
     }
@@ -186,7 +187,7 @@ async function refreshOneFeed(deps: RefreshFeedsDeps, feed: Feed): Promise<FeedR
 
   await deps.localStore.putFeedWithEntries(updatedFeed, entriesToWrite);
 
-  // Retention (design.md §3), deferred from subscribeToFeed to
+  // Retention, deferred from subscribeToFeed to
   // here: runs after every successful refresh, over the feed's full
   // post-refresh entry set. `quotaUsageRatio` is left at its default (0),
   // i.e. tier 4's quota-tightened cap (prunePolicy.ts) is implemented but
@@ -227,7 +228,7 @@ export async function refreshFeeds(deps: RefreshFeedsDeps): Promise<RefreshFeeds
   const outcomes: FeedRefreshOutcome[] = [];
 
   for (const batch of chunk(feeds, concurrency)) {
-    // Promise.allSettled (feed-fetching spec, "Per-feed error isolation"):
+    // Promise.allSettled provides per-feed error isolation:
     // `refreshOneFeed` already catches every structured error internally,
     // but allSettled is a second, structural line of defense so a genuinely
     // unexpected throw from one feed still can never reject the whole batch.

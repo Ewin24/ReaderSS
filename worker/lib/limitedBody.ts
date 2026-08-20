@@ -1,6 +1,6 @@
 /**
- * Streamed, byte-counted body reading for the feed relay (design.md §2
- * "Limits" — 5 MiB max body, `Content-Length` is a hint, never trusted).
+ * Streamed, byte-counted body reading for the feed relay (limits: 5 MiB
+ * max body, `Content-Length` is a hint, never trusted).
  * An unbounded relay body read is a memory and cost hazard for the Worker;
  * this reads chunk by chunk and aborts as soon as the streamed byte count
  * exceeds the limit, regardless of what any `Content-Length` header claims.

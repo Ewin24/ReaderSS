@@ -3,13 +3,13 @@ import { useSanitizer } from "./SanitizerContext";
 export interface SafeHtmlProps {
   /** Raw, feed-supplied HTML. Never pre-sanitized -- this component is the boundary. */
   html: string;
-  /** design.md §5: `entryId + contentHash`, used by the sanitizer's LRU memo. */
+  /** `entryId + contentHash`, used by the sanitizer's LRU memo. */
   cacheKey: string;
 }
 
 /**
- * THE ONLY `dangerouslySetInnerHTML` in the entire repository (design.md
- * §5). Enforced three ways: the `no-restricted-syntax` ESLint rule bans the
+ * THE ONLY `dangerouslySetInnerHTML` in the entire repository.
+ * Enforced three ways: the `no-restricted-syntax` ESLint rule bans the
  * attribute everywhere else, with a single file-level override scoped to
  * this exact file (eslint.config.js); the guard test in
  * `src/adapters/security/rawHtmlSinkGuard.test.ts` scans the source tree and

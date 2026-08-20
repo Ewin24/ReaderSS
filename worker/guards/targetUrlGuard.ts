@@ -1,6 +1,6 @@
 /**
- * SSRF boundary for the feed relay (design.md §2 "Abuse: an open fetch
- * relay is an open proxy"). Applied by worker/routes/feed.ts to the `url`
+ * SSRF boundary for the feed relay (abuse: an open fetch relay is an open
+ * proxy). Applied by worker/routes/feed.ts to the `url`
  * query parameter and re-applied to every redirect `Location` header, since
  * a redirect can point somewhere the original URL did not.
  *
@@ -9,9 +9,8 @@
  * itself, with no socket-level IP pinning available to this code. A
  * hostname that is public when this guard runs could resolve to a private
  * address on the actual outbound fetch a moment later (DNS rebinding /
- * TOCTOU). That risk is not preventable at this layer — see design.md §2's
- * "What the relay cannot prevent" table. Nothing in this file claims to
- * close it.
+ * TOCTOU). That risk is not preventable at this layer. Nothing in this file
+ * claims to close it.
  *
  * It relies on one WHATWG URL Standard behavior instead of re-implementing
  * it: `new URL()` already normalizes decimal/octal/hex/mixed IPv4-literal
@@ -55,7 +54,7 @@ interface Ipv4Range {
   readonly prefixLength: number;
 }
 
-// design.md §2, hostname rejections list.
+// Hostname rejections list.
 const BLOCKED_IPV4_RANGES: readonly Ipv4Range[] = [
   { base: [127, 0, 0, 0], prefixLength: 8 }, // loopback
   { base: [10, 0, 0, 0], prefixLength: 8 }, // private

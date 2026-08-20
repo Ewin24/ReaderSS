@@ -1,6 +1,6 @@
 /**
  * Conditional-GET header plumbing between client, relay, and origin
- * (design.md §2 "Header flow" and "304 path"). Pure header transforms —
+ * (header flow and 304 path). Pure header transforms —
  * no fetch, no I/O.
  */
 
@@ -22,7 +22,7 @@ const RELAY_ACCEPT_HEADER = [
 /**
  * Builds the headers sent to the origin: forwards the client's conditional
  * validators verbatim, plus the relay's own fixed Accept/User-Agent
- * (design.md §2 "relay → origin" row — these two are never derived from
+ * (the relay → origin header row — these two are never derived from
  * the client request).
  */
 export function buildOriginRequestHeaders(clientRequest: Request): Headers {
@@ -53,7 +53,7 @@ export function copyConditionalValidators(origin: Response, out: Headers): void 
 /**
  * Builds the 304 response returned to the client when the origin confirms
  * the feed is unchanged: empty body, validators echoed, and the upstream
- * status recorded for client diagnostics (design.md §2 "304 path").
+ * status recorded for client diagnostics (304 path).
  */
 export function buildNotModifiedResponse(origin: Response): Response {
   const headers = new Headers();

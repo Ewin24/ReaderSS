@@ -41,7 +41,7 @@ describe("openReaderSSDatabase — v0 to v1 upgrade", () => {
     await tx.done;
   });
 
-  it("creates the entries store with every index required by design.md §3", async () => {
+  it("creates the entries store with every required index", async () => {
     openDb = await openReaderSSDatabase();
 
     const tx = openDb.transaction("entries", "readonly");

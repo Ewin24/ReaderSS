@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { normalizeFeedUrl } from "./normalizeFeedUrl";
 
-// design.md §3 "feeds — keyPath id": "id is the normalized feed URL (lowercased
-// scheme+host, default port stripped, fragment stripped)". Also backs
-// feed-subscriptions spec's "Duplicate subscriptions are prevented" scenario,
-// which explicitly requires a URL differing only by trailing slash or the
-// case of scheme/host to be treated as the same subscription identity.
+// "feeds — keyPath id": "id is the normalized feed URL (lowercased
+// scheme+host, default port stripped, fragment stripped)". Also backs the
+// "Duplicate subscriptions are prevented" scenario, which explicitly
+// requires a URL differing only by trailing slash or the case of
+// scheme/host to be treated as the same subscription identity.
 
 describe("normalizeFeedUrl", () => {
   it("lowercases the scheme and host", () => {

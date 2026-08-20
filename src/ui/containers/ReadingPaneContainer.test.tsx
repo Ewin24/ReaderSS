@@ -99,7 +99,7 @@ const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
 const feedParser: FeedParserPort = { parse: vi.fn() };
 
 describe("ReadingPaneContainer", () => {
-  it("marks an unread entry read via toggleRead as soon as it opens (entry-reading spec, 'Opening an entry marks it read')", async () => {
+  it("marks an unread entry read via toggleRead as soon as it opens", async () => {
     const entry = makeEntry({ read: 0 });
     const localStore = makeLocalStore(entry);
     const onEntryChanged = vi.fn();

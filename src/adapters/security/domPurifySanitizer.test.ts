@@ -138,7 +138,7 @@ describe("DomPurifySanitizer", () => {
     expect(clean).toContain('rel="noopener noreferrer nofollow"');
   });
 
-  it("forces loading=lazy and referrerpolicy=no-referrer on every image (design.md §5: images are allowed, leak is mitigated, not blocked)", () => {
+  it("forces loading=lazy and referrerpolicy=no-referrer on every image (images are allowed, leak is mitigated, not blocked)", () => {
     const sanitizer = new DomPurifySanitizer();
     const clean = sanitizer.sanitize('<img src="https://example.com/a.png">', "k17");
     expect(clean).toContain('loading="lazy"');

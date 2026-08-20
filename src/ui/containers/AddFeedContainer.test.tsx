@@ -9,7 +9,7 @@ import { ServicesProvider } from "../../app/providers/ServicesContext";
 import { AddFeedContainer } from "./AddFeedContainer";
 
 /**
- * Task 10.14: calls `subscribeToFeed` through `services.localStore`/
+ * Calls `subscribeToFeed` through `services.localStore`/
  * `services.feedSource`/`services.feedParser` -- test doubles for the PORTS,
  * never a mock of `subscribeToFeed` itself. Mocking the unit under test would
  * prove nothing about the wiring; these tests drive the real

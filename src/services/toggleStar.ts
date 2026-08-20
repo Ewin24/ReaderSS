@@ -1,7 +1,7 @@
 /**
  * The exact structural mirror of `toggleRead.ts`, for `Entry.starred` /
- * `Entry.starredChangedAt` (design.md §4, entry-reading spec "Starred
- * state"). The ONLY writer of these two fields. A thin, named, field-specific
+ * `Entry.starredChangedAt` ("Starred state"). The ONLY writer of these two
+ * fields. A thin, named, field-specific
  * wrapper around the shared `toggleEntryField` algorithm. See
  * `toggleRead.ts`'s module doc comment for the full
  * rationale -- it applies here unchanged, field for field.

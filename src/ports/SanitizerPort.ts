@@ -1,5 +1,5 @@
 /**
- * Port over the single enforced DOMPurify choke point (design.md §5). The
+ * Port over the single enforced DOMPurify choke point. The
  * only production implementation is `adapters/security/domPurifySanitizer.ts`.
  * `ui/components/SafeHtml` never imports this port directly (ui/components/**
  * may only import `domain/models`, per the layer-zone rule in
@@ -10,7 +10,7 @@
 export interface SanitizerPort {
   /**
    * Sanitizes raw, feed-supplied HTML for safe DOM insertion. `cacheKey`
-   * (design.md §5: `entryId + contentHash`) lets the implementation memoize
+   * (`entryId + contentHash`) lets the implementation memoize
    * so repeated renders of the same unchanged entry (e.g. scrolling) do not
    * re-run DOMPurify.
    */

@@ -1,9 +1,9 @@
 /**
- * THE single production module allowed to import `dompurify` (design.md §5,
- * enforcement layer 2 of 3: `eslint.config.js`'s `no-restricted-imports`;
- * layer 3: the guard test in this same directory).
+ * THE single production module allowed to import `dompurify` (enforcement
+ * layer 2 of 3: `eslint.config.js`'s `no-restricted-imports`; layer 3: the
+ * guard test in this same directory).
  *
- * Decision, stated explicitly (design.md §5): RAW feed HTML is stored in
+ * Decision, stated explicitly: RAW feed HTML is stored in
  * IndexedDB and sanitized HERE, at render time, never at ingestion.
  * IndexedDB is therefore never a trust boundary -- a future write path that
  * skipped this adapter would still be caught the next time the content is
@@ -21,8 +21,8 @@
  * scrolled into view, and the CSP's `Referrer-Policy: no-referrer` applies
  * the same policy at the browser level (worker/headers/security.ts).
  * Proxying images through the relay would close the IP-leak gap entirely
- * but was rejected for MVP (design.md §5) as extra relay traffic/cost, and
- * documented there as a follow-up, not silently dropped.
+ * but was rejected for MVP as extra relay traffic/cost, and noted here as a
+ * follow-up, not silently dropped.
  */
 import DOMPurify from "dompurify";
 import type { SanitizerPort } from "../../ports/SanitizerPort";
@@ -40,8 +40,8 @@ const LRU_CAPACITY = 100;
 // entry cannot itself dominate the cache's memory footprint.
 export const MAX_CACHEABLE_ENTRY_BYTES = 200_000; // ~200 KB
 // Running total across every cached entry. Well below the relay's 5 MiB
-// per-fetch cap (design.md §2) -- this bounds the SANITIZED-HTML cache's own
-// memory footprint, not any single feed fetch.
+// per-fetch cap -- this bounds the SANITIZED-HTML cache's own memory
+// footprint, not any single feed fetch.
 export const MAX_TOTAL_CACHE_BYTES = 2_000_000; // ~2 MB
 
 function byteLength(value: string): number {
@@ -98,10 +98,9 @@ function ensureHookInstalled(): void {
 }
 
 /**
- * Small capacity-bounded LRU keyed on `entryId + contentHash` (design.md
- * §5), size-aware on top of the key-count capacity: eviction is
- * driven by whichever bound -- key count or total cached bytes -- is hit
- * first.
+ * Small capacity-bounded LRU keyed on `entryId + contentHash`, size-aware
+ * on top of the key-count capacity: eviction is driven by whichever bound
+ * -- key count or total cached bytes -- is hit first.
  */
 class LruCache<K> {
   private readonly store = new Map<K, string>();

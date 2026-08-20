@@ -1,12 +1,11 @@
 /**
- * Refresh control invoking the real `refreshFeeds` service (design.md §1
- * names `RefreshContainer`). `Services` is structurally a
- * `RefreshFeedsDeps`, so it is passed straight through, the same pattern
- * every other container uses.
+ * Refresh control invoking the real `refreshFeeds` service. `Services` is
+ * structurally a `RefreshFeedsDeps`, so it is passed straight through, the
+ * same pattern every other container uses.
  *
  * Per-feed failures render through the existing `RefreshErrorChip` -- ONE
- * chip per failed feed, never one aggregated message (feed-fetching spec
- * "Per-feed error isolation", "Partial refresh failure"). A failed
+ * chip per failed feed, never one aggregated message, for per-feed error
+ * isolation on a partial refresh failure. A failed
  * outcome's `FeedRefreshOutcome` carries only the `feedId`, not the feed's
  * title, so each failing feed's title is looked up with a targeted
  * `getFeed` call after the batch settles, rather than loading every feed up

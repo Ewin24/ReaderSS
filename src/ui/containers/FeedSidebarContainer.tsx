@@ -1,6 +1,5 @@
 /**
- * Loads the real subscribed feed list and each feed's unread count
- * (feed-subscriptions spec, "List feeds with metadata"; design.md §1) and
+ * Loads the real subscribed feed list and each feed's unread count, and
  * renders them through the presentational `FeedSidebar` (props in,
  * callbacks out).
  *
@@ -48,8 +47,7 @@ export interface FeedSidebarContainerProps {
    * was previously unreachable from the UI; `FeedSidebar`'s own
    * confirmation step guarantees this
    * container only ever calls `deleteFeed` after the user explicitly
-   * confirmed (feed-subscriptions spec, "Removal is confirmed before it
-   * happens").
+   * confirmed: removal is confirmed before it happens.
    */
   onFeedRemoved?: (feedId: string) => void;
 }

@@ -10,7 +10,7 @@
  * for real, together, against a rendered UI.
  *
  * An earlier version found the sidebar's unread badge never updated,
- * violating a mandatory spec scenario, and no test caught it (357 passing
+ * violating a required behavior, and no test caught it (357 passing
  * tests over a product showing a wrong number). This test is where that
  * class of gap gets closed: every state change below is asserted against
  * the rendered DOM, including the unread count moving in both directions.

@@ -1,14 +1,14 @@
 /**
  * Normalizes a feed URL into the canonical form used as a `feeds` object
- * store `id` (design.md §3): lowercased scheme+host, default port stripped,
+ * store `id`: lowercased scheme+host, default port stripped,
  * fragment stripped, and a single trailing slash on a non-root path
  * collapsed. Query strings and path case are preserved verbatim — URL paths
  * are case-sensitive per RFC 3986 and normalizing them would risk treating
  * two genuinely distinct feed URLs as the same subscription.
  *
  * This is also the sole duplicate-detection identity used by
- * `services/subscribeToFeed.ts` (feed-subscriptions spec, "Duplicate
- * subscriptions are prevented"), which explicitly requires a URL differing
+ * `services/subscribeToFeed.ts` for "Duplicate subscriptions are
+ * prevented", which explicitly requires a URL differing
  * only by trailing slash or scheme/host case to collide with an existing
  * subscription.
  *

@@ -1,8 +1,8 @@
 /**
  * Binds `EntryList` (presentational, props-in/callbacks-out) to the real
- * `toggleRead`/`toggleStar` services via the services context (design.md
- * §1). Both services are the ONLY writers of their respective change
- * timestamps (design.md §4) -- this container calls them directly, with no
+ * `toggleRead`/`toggleStar` services via the services context. Both
+ * services are the ONLY writers of their respective change
+ * timestamps -- this container calls them directly, with no
  * intermediate state of its own, so there is exactly one write path from a
  * click to a stamped entry.
  *

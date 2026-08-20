@@ -16,7 +16,7 @@ function fnv1a32(input: string, offsetBasis: number): number {
  * 32-bit FNV-1a passes with different seeds, concatenated into a 64-bit
  * (16 hex char) digest.
  *
- * Used to derive local dedup identity keys (design.md §3), which also
+ * Used to derive local dedup identity keys, which also
  * become the `entries` object store's IndexedDB primary key. `putEntry` is
  * an upsert, so the property that actually matters here is COLLISION
  * RESISTANCE at expected entry volumes — a collision silently overwrites an
@@ -24,7 +24,7 @@ function fnv1a32(input: string, offsetBasis: number): number {
  * is never a security boundary). A single 32-bit FNV-1a pass (~4*10^9
  * buckets) did not leave enough headroom for that; 64 bits (~1.8*10^19
  * buckets) does, while staying synchronous and dependency-free, which
- * `domain/**` requires (design.md §1 — zero imports; Web Crypto's
+ * `domain/**` requires (zero imports; Web Crypto's
  * `subtle.digest` is async-only).
  */
 export function shortHash(input: string): string {

@@ -1,15 +1,15 @@
 /**
  * Binds `AddFeedForm` (presentational) to the real `subscribeToFeed` service
- * via the services context (design.md §1; task 10.14-10.15). `Services`
+ * via the services context. `Services`
  * (localStore, clock, feedSource, feedParser) is structurally a
  * `SubscribeToFeedDeps`, so `services` is passed straight through -- the
  * same pattern `EntryListContainer`/`ReadingPaneContainer` already use for
  * `toggleRead`/`toggleStar`.
  *
  * Maps each of `SubscribeToFeedResult`'s six outcomes onto `AddFeedForm`'s
- * `status` prop with a specific, composed message (feed-subscriptions spec):
+ * `status` prop with a specific, composed message:
  * `not-a-feed` and `unreachable` both name the submitted URL, since the
- * result itself does not carry it -- the spec requires the message to state
+ * result itself does not carry it -- the message must state
  * "no feed was found at <url>" / the unreachable reason, not just repeat the
  * port's raw error text.
  */

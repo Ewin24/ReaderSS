@@ -7,9 +7,8 @@ import { SanitizerContext } from "./SanitizerContext";
 /**
  * Renders through the REAL `DomPurifySanitizer` (not a mock) so these
  * assertions prove the actual end-to-end behavior of the choke point --
- * `SafeHtml` calling into DOMPurify -- against the rendered DOM, per
- * design.md §7's testing strategy ("assert the resulting DOM, not the
- * string"). `domPurifySanitizer.test.ts` covers the same payload list
+ * `SafeHtml` calling into DOMPurify -- against the rendered DOM, not the
+ * string. `domPurifySanitizer.test.ts` covers the same payload list
  * against the sanitizer's raw string output; this file covers the same list
  * one layer further downstream, through Preact's `dangerouslySetInnerHTML`.
  */
@@ -84,7 +83,7 @@ describe("SafeHtml", () => {
     expect(container.querySelector("pre code")?.textContent).toBe("code");
   });
 
-  it("forces rel=noopener noreferrer nofollow on rendered outbound links (content-security spec)", () => {
+  it("forces rel=noopener noreferrer nofollow on rendered outbound links", () => {
     const container = renderSafeHtml('<a href="https://example.com">link</a>');
     const anchor = container.querySelector("a");
     expect(anchor?.getAttribute("rel")).toBe("noopener noreferrer nofollow");

@@ -14,7 +14,7 @@ const baseEntry = {
 };
 
 /**
- * The pane's body routes through `SafeHtml` (design.md §5), so
+ * The pane's body routes through `SafeHtml`, so
  * `useSanitizer()` throws unless a `SanitizerContext.Provider` is an
  * ancestor. This test file is not re-testing sanitization correctness --
  * that is `SafeHtml.test.tsx`'s job, with the real `DomPurifySanitizer` and
@@ -126,8 +126,8 @@ describe("ReadingPane", () => {
     });
 
     it("refuses to render body content at all when no SanitizerContext.Provider is present, rather than falling back to unsanitized output", () => {
-      // SafeHtml's own `useSanitizer()` throws outside a provider (design.md
-      // §5's stated fail-closed behaviour) -- Preact logs that as a render
+      // SafeHtml's own `useSanitizer()` throws outside a provider -- this is
+      // its stated fail-closed behaviour -- Preact logs that as a render
       // error via console.error; suppressed here since the throw itself is
       // the assertion.
       const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -140,7 +140,7 @@ describe("ReadingPane", () => {
     });
   });
 
-  describe("mark-as-unread and star toggles (Amendment C)", () => {
+  describe("mark-as-unread and star toggles", () => {
     it("does not render toggle controls when no toggle handler is provided (backward compatible)", () => {
       renderReadingPane({
         entry: { ...baseEntry, summary: null, content: "Body", read: 1, starred: 0 },

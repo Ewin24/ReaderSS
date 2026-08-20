@@ -215,7 +215,7 @@ describe("subscribeToFeed", () => {
     const feedSource = makeFeedSource({ status: "error", code: "NETWORK_ERROR", message: "should not be called" });
 
     // Differs only by trailing slash and host case from the stored feed's
-    // normalizedUrl, per feed-subscriptions spec's duplicate scenario.
+    // normalizedUrl, per the duplicate-subscription scenario.
     const result = await subscribeToFeed(
       { feedSource, feedParser, localStore, clock: makeClock() },
       { url: "HTTPS://EXAMPLE.com/feed.xml" },

@@ -1,5 +1,5 @@
 /**
- * The feed relay route (design.md §2 "The Relay Contract"). `GET
+ * The feed relay route (the relay contract). `GET
  * /api/feed?url=<percent-encoded absolute http(s) URL>`.
  *
  * Order of checks: caller origin, then URL parseability, then the SSRF
@@ -9,7 +9,7 @@
  * the WHATWG Fetch spec — aborting a fetch's controller also errors its
  * response body stream, not just the header-wait phase — or a malformed
  * redirect `Location` header from the origin), is caught by the per-hop
- * try/catch below and mapped to design.md §2's error-code table. The result
+ * try/catch below and mapped to the relay's error-code table. The result
  * is always `application/json`, never HTML, so the client can always parse
  * the response. `worker/index.ts`'s route boundary carries a second,
  * defense-in-depth catch (`buildUnhandledRelayErrorResponse`) for any future
@@ -25,7 +25,7 @@ import type { RelayErrorCode } from "../../shared/feedErrorCodes";
 const UPSTREAM_TIMEOUT_MS = 10_000;
 const MAX_REDIRECTS = 3;
 
-// design.md §2 "Limits" table — media type only, parameters (e.g. charset) ignored.
+// Allowed content types — media type only, parameters (e.g. charset) ignored.
 const ALLOWED_CONTENT_TYPES = new Set([
   "application/rss+xml",
   "application/atom+xml",
@@ -53,7 +53,7 @@ function errorResponse(
 }
 
 function applyCors(headers: Headers, deploymentOrigin: string): void {
-  // design.md §2 "relay → client" row: the exact app origin, never "*".
+  // Relay → client header row: the exact app origin, never "*".
   headers.set("Access-Control-Allow-Origin", deploymentOrigin);
   headers.set("Vary", "Origin");
 }

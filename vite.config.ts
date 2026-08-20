@@ -21,8 +21,8 @@ export default defineConfig({
     // `worker`/`domain` node-environment `resolve.external` node-builtins
     // list as incompatible with a Cloudflare Worker environment. Vitest never
     // needs the plugin anyway — `worker/**` tests call `handleFeedRequest`
-    // directly with `new Request()` and stub `fetch`, per design.md's testing
-    // strategy; no live Worker or dev server is involved in the test run.
+    // directly with `new Request()` and stub `fetch`; no live Worker or dev
+    // server is involved in the test run.
     ...(process.env.VITEST ? [] : [cloudflare()]),
     preact(),
     VitePWA({
@@ -44,11 +44,9 @@ export default defineConfig({
     outDir: "dist",
   },
   test: {
-    // openspec/config.yaml's rules.verify.coverage_threshold (task 6.11):
-    // raised from 0 to 70 once domain/adapter modules existed to cover
-    // (design.md §7). Configured here too so `npm run test:coverage`
-    // actually FAILS below 70%, rather than the number being a
-    // documentation-only claim nothing enforces.
+    // The coverage threshold is enforced here, not merely documented, so
+    // `npm run test:coverage` actually FAILS below 70% rather than the
+    // number being a claim nothing checks.
     coverage: {
       provider: "v8",
       thresholds: {

@@ -3,8 +3,8 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Layer 3 of 3 for the single enforced DOMPurify choke point (design.md
- * §5). Layers 1 and 2 are `eslint.config.js`'s `no-restricted-syntax` and
+ * Layer 3 of 3 for the single enforced DOMPurify choke point. Layers 1 and
+ * 2 are `eslint.config.js`'s `no-restricted-syntax` and
  * `no-restricted-imports` rules; both can be silenced by an
  * `eslint-disable` comment. This test scans the actual PRODUCTION source
  * tree on disk and fails if either pattern shows up anywhere it should not,
@@ -105,7 +105,7 @@ function isUnderDompurifyAllowedDir(relativePath: string): boolean {
   return relativePath.startsWith(DOMPURIFY_ALLOWED_DIR) || posixPath.startsWith(DOMPURIFY_ALLOWED_DIR_POSIX);
 }
 
-describe("raw HTML sink guard (design.md §5, enforcement layer 3 of 3)", () => {
+describe("raw HTML sink guard (enforcement layer 3 of 3)", () => {
   const files = SCAN_ROOTS.flatMap((root) => listProductionSourceFiles(join(REPO_ROOT, root)));
 
   it("scans a non-trivial number of production files (sanity check the scan itself is not vacuous)", () => {

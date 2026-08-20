@@ -1,6 +1,6 @@
 /**
  * CSP and hardening headers applied to every response the Worker returns,
- * including static asset responses served via env.ASSETS (design.md §5).
+ * including static asset responses served via env.ASSETS.
  */
 
 const CONTENT_SECURITY_POLICY = [

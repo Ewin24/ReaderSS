@@ -7,8 +7,8 @@ import { describeError } from "./describeError";
  * `ReadingPaneContainer`, `FeedSidebarContainer`, `RefreshContainer`,
  * `AddFeedContainer`, `toggleEntryField.ts`, `bootstrap.tsx`), each a
  * separate chance to miss a future change (e.g. unwrapping a domain error,
- * redacting a field). Lives in `domain/` (design.md §1's dependency-free
- * innermost layer) so every other layer may import the one implementation.
+ * redacting a field). Lives in `domain/`, the dependency-free innermost
+ * layer, so every other layer may import the one implementation.
  */
 describe("describeError", () => {
   it("returns an Error's own message", () => {

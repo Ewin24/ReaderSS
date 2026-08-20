@@ -12,7 +12,7 @@ import { ServicesProvider } from "./providers/ServicesContext";
 import { SanitizerContext, type SanitizeFn } from "../ui/components/SafeHtml";
 
 // `App` assumes a `SanitizerContext.Provider` ancestor -- `main.tsx` supplies
-// the real one (design.md §5); these tests are not re-testing sanitization
+// the real one; these tests are not re-testing sanitization
 // correctness (`SafeHtml.test.tsx` already does, with the real
 // `DomPurifySanitizer` and its malicious payload list), so an identity
 // function is enough to prove `App`'s own wiring reaches `ReadingPane`.
@@ -523,7 +523,7 @@ describe("App", () => {
   });
 
   /**
-   * Task 10.15/10.17: `AddFeedContainer` and `RefreshContainer` mounted
+   * `AddFeedContainer` and `RefreshContainer` mounted
    * inside `App.tsx`. Uses a stateful fake `LocalStorePort` (mutated by
    * `putFeedWithEntries`/`putEntry`/`deleteFeed`, the same way the real
    * `idbLocalStore` would be) rather than the shared static-array

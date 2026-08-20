@@ -1,8 +1,8 @@
 /**
  * Binds `ReadingPane` to the real `toggleRead`/`toggleStar` services via the
- * services context (design.md §1). Also owns the one behaviour that is
- * specifically about OPENING an entry, not toggling it (entry-reading spec,
- * "Opening an entry marks it read"): mounting on -- or receiving -- an
+ * services context. Also owns the one behaviour that is
+ * specifically about OPENING an entry, not toggling it: opening an entry
+ * marks it read. Mounting on -- or receiving -- an
  * unread entry marks it read through the same single `toggleRead` writer,
  * never by constructing a `readChangedAt` value itself.
  *

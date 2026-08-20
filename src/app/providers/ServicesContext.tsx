@@ -1,5 +1,5 @@
 /**
- * Injected services via context (design.md §1's directory structure).
+ * Injected services via context.
  * `ui/containers/**` binds `services/**` (via this context) to
  * `ui/components/**`, never importing `adapters/**` directly -- enforced by
  * `eslint.config.js`'s `import-x/no-restricted-paths` zone for

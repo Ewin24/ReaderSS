@@ -1,6 +1,6 @@
 /**
  * Port over fetching one feed's raw body through the Worker relay
- * (design.md §2 "The Relay Contract"). The only production implementation
+ * ("The Relay Contract"). The only production implementation
  * is `adapters/feed/relayFeedSource.ts`. This port hands back the raw
  * body text and conditional-GET validators only — parsing the body into
  * domain `Entry` objects is `feedParser`'s job, not this port's.
@@ -12,8 +12,8 @@ import { RELAY_ERROR_CODES } from "../../shared/feedErrorCodes";
  * the single source of truth also imported by `worker/routes/feed.ts`, so
  * the two runtimes cannot drift out of sync), plus three client-only codes
  * for cases the relay itself cannot report because the relay never ran:
- * `NETWORK_ERROR` when the relay endpoint was unreachable (feed-fetching
- * spec, "Relay unreachable during refresh"), `CLIENT_TIMEOUT` when the relay
+ * `NETWORK_ERROR` when the relay endpoint was unreachable ("Relay
+ * unreachable during refresh"), `CLIENT_TIMEOUT` when the relay
  * was reachable but did not respond within this adapter's own bounded wait
  * (`relayFeedSource.ts`'s `CLIENT_TIMEOUT_MS`), and `RELAY_UNAVAILABLE` when
  * something answered on `/api/feed` but it was not the relay at all — e.g. a

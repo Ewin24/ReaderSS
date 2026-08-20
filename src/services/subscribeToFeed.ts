@@ -1,11 +1,10 @@
 /**
- * Wires `FeedSourcePort -> feedParser -> LocalStorePort` (design.md §8).
- * Sanitization deliberately stays out of this path entirely
- * (design.md §5): what gets persisted here is the feed's raw HTML, exactly
+ * Wires `FeedSourcePort -> feedParser -> LocalStorePort`.
+ * Sanitization deliberately stays out of this path entirely:
+ * what gets persisted here is the feed's raw HTML, exactly
  * as `feedParser` normalized it. Nothing is written to the store unless
- * both the fetch AND the parse succeed (feed-subscriptions spec, "Add a
- * feed by URL": "MUST NOT persist a subscription whose first fetch or parse
- * failed").
+ * both the fetch AND the parse succeed ("Add a feed by URL" MUST NOT
+ * persist a subscription whose first fetch or parse failed).
  *
  * The feed row and its entries are written in one atomic call
  * (`LocalStorePort.addFeedWithEntries`, the create-only variant) rather
@@ -24,7 +23,7 @@
  *
  * RETENTION IS STILL DELIBERATELY NOT ENFORCED HERE:
  * `domain/retention/prunePolicy.selectPrunableEntries` has no call site in
- * this service, on purpose. design.md §3 places retention "after every
+ * this service, on purpose. Retention is placed "after every
  * successful refresh", and that is now wired -- into `services/refreshFeeds.ts`,
  * not this one-time initial subscribe. A large feed's very first fetch (via
  * this function) is still unbounded; the per-feed cap and quota guard first
@@ -80,7 +79,7 @@ export async function subscribeToFeed(
   deps: SubscribeToFeedDeps,
   input: SubscribeToFeedInput,
 ): Promise<SubscribeToFeedResult> {
-  // feed-subscriptions spec, "Malformed URL": rejected client-side, before
+  // "Malformed URL": rejected client-side, before
   // any network request. `toSafeHref` (domain/url/safeUrl.ts) already
   // implements exactly this check -- parse as an absolute URL, allow only
   // http(s) -- for the href-sink use case; reused here rather than
@@ -91,8 +90,8 @@ export async function subscribeToFeed(
 
   const normalizedUrl = normalizeFeedUrl(input.url);
 
-  // feed-subscriptions spec, "Duplicate subscriptions are prevented": the
-  // normalized URL IS the subscription identity (design.md §3: `Feed.id`
+  // "Duplicate subscriptions are prevented": the
+  // normalized URL IS the subscription identity (`Feed.id`
   // is the normalized feed URL), so this is a direct primary-key lookup,
   // not a scan, and happens before the network request to avoid fetching a
   // feed that will be rejected anyway.

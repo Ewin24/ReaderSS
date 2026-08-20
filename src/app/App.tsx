@@ -135,7 +135,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     // `ServicesContext` and is expected to be a stable object identity for
     // the lifetime of the provider (constructed once by `buildServices()`
     // in `main.tsx`). `feedListVersion` IS a dependency: it is what makes an
-    // added or removed feed (task 10.15/10.19) show up here.
+    // added or removed feed show up here.
   }, [usingOverride, feedListVersion]);
 
   // Default feed selection once the store's feed list has loaded (mirrors
@@ -172,7 +172,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     };
     // See the feeds-load effect above for why `services` is not listed.
     // `entriesVersion` IS a dependency: it is what makes a manual refresh's
-    // newly fetched entries (task 10.17) show up here, since a refresh does
+    // newly fetched entries show up here, since a refresh does
     // not itself change `selectedFeedId`.
   }, [usingOverride, selectedFeedId, entriesVersion]);
 
@@ -209,8 +209,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
 
   // Only used in override/test mode: the store-driven sidebar renders
   // through `FeedSidebarContainer` below instead, which loads its own feed
-  // list and unread counts directly from `services.localStore` (task
-  // 10.10/10.11).
+  // list and unread counts directly from `services.localStore`.
   const overrideFeedSidebarItems: FeedSidebarItem[] = useMemo(
     () =>
       feeds.map((feed) => ({
@@ -277,9 +276,8 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     setToggleErrorMessage(message);
   }, []);
 
-  // Task 10.15: a newly subscribed feed (feed-subscriptions spec, "Add a
-  // feed by URL" -- "the feed MUST appear in the feed list without a page
-  // reload") is also selected immediately, so its entries are visible
+  // A newly subscribed feed must appear in the feed list without a page
+  // reload, and is also selected immediately, so its entries are visible
   // without an extra click.
   const handleFeedSubscribed = useCallback(
     (feedId: string) => {
@@ -290,7 +288,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     [bumpFeedList],
   );
 
-  // Task 10.19: if the removed feed was the selected one, clear the
+  // If the removed feed was the selected one, clear the
   // selection -- the entries-load effect above then naturally clears
   // `storeEntries` for a null `selectedFeedId`.
   const handleFeedRemoved = useCallback(
@@ -301,7 +299,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     [bumpFeedList],
   );
 
-  // Task 10.17: a refresh does not add/remove feeds, only fetches new
+  // A refresh does not add/remove feeds, only fetches new
   // content for existing ones, so only the entries/entry-state signals are
   // bumped -- never `bumpFeedList`, which would needlessly reload
   // `storeFeeds` (feed titles/folders do not change on refresh).
@@ -311,7 +309,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   }, [bumpEntries, bumpEntryState]);
 
   // On a narrow viewport, only one of EntryList/ReadingPane is mounted at a
-  // time (design.md's responsive-layout requirement), and unmounting the
+  // time, per the responsive-layout requirement, and unmounting the
   // focused element resets browser focus to <body> with no recovery - a
   // keyboard/screen-reader user would have to tab from the top of the page
   // on every navigation. On desktop both panes stay mounted, so there is

@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest";
 import { validateTargetUrl } from "./targetUrlGuard";
 
 /**
- * One test per threat-matrix class (design.md §2 "Abuse: an open fetch
- * relay is an open proxy"; tasks.md 4.1). Each rejection asserts BOTH
+ * One test per threat-matrix class (abuse: an open fetch relay is an open
+ * proxy). Each rejection asserts BOTH
  * `allowed: false` and the specific `reason` code, so a test cannot pass by
  * accident on a guard that rejects everything.
  */

@@ -34,8 +34,8 @@ function assertValidEntryState(entry: Entry): void {
 }
 
 /**
- * `idb`-backed implementation of {@link LocalStorePort} (design.md §1/§3).
- * Takes an already-open database so `schema.ts` remains the only module
+ * `idb`-backed implementation of {@link LocalStorePort}. Takes an
+ * already-open database so `schema.ts` remains the only module
  * responsible for opening, creating, and migrating it.
  */
 export function createIdbLocalStore(db: ReaderSSDatabase): LocalStorePort {

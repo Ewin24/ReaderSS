@@ -10,7 +10,7 @@ export interface EntryIdentityInput {
 }
 
 /**
- * Derives a stable, feed-scoped identity for an entry (design.md §3).
+ * Derives a stable, feed-scoped identity for an entry.
  * Prefers guid/id/link, in that order; falls back to a composite of
  * link + publishedAt + title when the feed supplies none of those.
  */
@@ -23,7 +23,7 @@ export function deriveEntryIdentity(input: EntryIdentityInput): string {
 }
 
 /**
- * Detects a feed whose GUIDs are unstable across fetches (design.md §3):
+ * Detects a feed whose GUIDs are unstable across fetches:
  * the feed has a prior baseline, none of its previously known ids survived
  * into the current payload, and every incoming id is distinct (no internal
  * collisions in the current payload).

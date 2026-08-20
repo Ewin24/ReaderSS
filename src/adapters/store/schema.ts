@@ -74,7 +74,7 @@ export interface OpenReaderSSDatabaseOptions {
   blockedTimeoutMs?: number;
 }
 
-/** True only for the two conditions design.md §3 scopes the destructive-reset escape hatch to. */
+/** True only for the two conditions the destructive-reset escape hatch is scoped to. */
 function isRecoverableSchemaFailure(cause: unknown): boolean {
   if (cause instanceof UnsupportedSchemaVersionError) return true;
   return cause instanceof DOMException && cause.name === "VersionError";
@@ -105,8 +105,8 @@ function armBlockedTimeout(ms: number): {
 
 /**
  * Opens (and, on first run, creates) the readerss IndexedDB database.
- * Implements the cumulative fall-through upgrade switch from design.md §3
- * plus its destructive-reset escape hatch: any unsupported on-disk version
+ * Implements a cumulative fall-through upgrade switch plus its
+ * destructive-reset escape hatch: any unsupported on-disk version
  * or an upgrade-transaction throw triggers a full delete + recreate, with
  * the `config/github` record preserved across the reset when readable.
  */
@@ -206,7 +206,7 @@ async function tryReadGithubConfig(): Promise<unknown> {
 }
 
 /**
- * The destructive-reset escape hatch (design.md §3): read `config/github`
+ * The destructive-reset escape hatch: read `config/github`
  * through a short-lived connection at whatever version is currently on
  * disk, delete the database, recreate it at DB_VERSION, and write the
  * preserved `github` config record back if one was found. IndexedDB is a
