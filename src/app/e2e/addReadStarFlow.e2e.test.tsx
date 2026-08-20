@@ -1,15 +1,15 @@
 /**
- * End-to-end proof (task 10.20-10.22): the ONE test in the whole nine-slice
- * plan that renders the real composition -- `buildServices()` (real
- * `idbLocalStore` over `fake-indexeddb`, real `relayFeedSource`, real
- * `feedParser`, real `domPurifySanitizer`), real `ServicesProvider`/
- * `SanitizerContext.Provider`, and the real `App` -- with only the NETWORK
- * BOUNDARY stubbed via `msw` (`/api/feed`). Every container test elsewhere
- * in this project uses test doubles for the ports; this is the first and
- * only place `subscribeToFeed`, `refreshFeeds`, `toggleRead`, `toggleStar`,
- * and `idbLocalStore` all run for real, together, against a rendered UI.
+ * End-to-end proof: the ONE test in the project that renders the real
+ * composition -- `buildServices()` (real `idbLocalStore` over
+ * `fake-indexeddb`, real `relayFeedSource`, real `feedParser`, real
+ * `domPurifySanitizer`), real `ServicesProvider`/`SanitizerContext.Provider`,
+ * and the real `App` -- with only the NETWORK BOUNDARY stubbed via `msw`
+ * (`/api/feed`). Every container test elsewhere in this project uses test
+ * doubles for the ports; this is the first and only place `subscribeToFeed`,
+ * `refreshFeeds`, `toggleRead`, `toggleStar`, and `idbLocalStore` all run
+ * for real, together, against a rendered UI.
  *
- * Slice 10a's own review found the sidebar's unread badge never updated,
+ * An earlier version found the sidebar's unread badge never updated,
  * violating a mandatory spec scenario, and no test caught it (357 passing
  * tests over a product showing a wrong number). This test is where that
  * class of gap gets closed: every state change below is asserted against
@@ -34,7 +34,7 @@ const RSS2_FIXTURE = readFileSync(join(FIXTURES_DIR, "rss2.xml"), "utf8");
 // `contentHtml: "<p>Full <b>content</b> for post one.</p>"` -- real,
 // feed-supplied HTML, which is what proves the reading pane renders
 // FORMATTED content (a real `<b>` element), not the escaped literal string
-// Slice 10a's fix (wiring `SafeHtml` into `ReadingPane`) addressed.
+// that wiring `SafeHtml` into `ReadingPane` addressed.
 const FEED_URL = "https://example.com/feed.xml";
 
 const server = setupServer(
@@ -108,15 +108,14 @@ describe("e2e: add a feed, read/unread, star -- real store, real services, netwo
       expect(screen.getByRole("button", { name: /^example blog, 2 unread$/i })).toBeInTheDocument(),
     );
 
-    // Finding 1, Slice 10b correction round: the assertion above alone
-    // PASSED on this exact bug -- `waitFor` polls until its callback stops
-    // throwing, so it happily returns the instant "2 unread" appears
-    // transiently, even if the auto-mark-on-open effect immediately wrote
-    // the entry back to read afterward. It was passing for the wrong
-    // reason on the very regression it was meant to prevent. Assert the
-    // SETTLED state explicitly and from a second, independent signal (the
-    // entry's own accessible name, not just the sidebar's count) so a
-    // silent revert cannot hide behind either check alone.
+    // The assertion above alone PASSED on this exact bug -- `waitFor` polls
+    // until its callback stops throwing, so it happily returns the instant
+    // "2 unread" appears transiently, even if the auto-mark-on-open effect
+    // immediately wrote the entry back to read afterward. It was passing
+    // for the wrong reason on the very regression it was meant to prevent.
+    // Assert the SETTLED state explicitly and from a second, independent
+    // signal (the entry's own accessible name, not just the sidebar's
+    // count) so a silent revert cannot hide behind either check alone.
     await waitFor(() => {
       expect(postOneButton).toHaveAccessibleName(/unread/i);
     });
@@ -145,14 +144,13 @@ describe("e2e: add a feed, read/unread, star -- real store, real services, netwo
     // instance's in-memory state.
     await renderRealApp();
 
-    // Finding 1, Slice 10b correction round: this used to assert
-    // "1 unread" here -- i.e. that the entry came back READ after a fresh
-    // mount, even though the flow above explicitly marked it unread right
-    // before starring it. That assertion was itself the auto-revert bug's
-    // fingerprint: it only passed because the pre-fix effect silently wrote
-    // the entry back to `read: 1` before this test ever unmounted. The
-    // user's explicit "mark as unread" MUST survive a reload -- the honest
-    // persisted state is "2 unread".
+    // This used to assert "1 unread" here -- i.e. that the entry came back
+    // READ after a fresh mount, even though the flow above explicitly
+    // marked it unread right before starring it. That assertion was itself
+    // the auto-revert bug's fingerprint: it only passed because the buggy
+    // effect silently wrote the entry back to `read: 1` before this test
+    // ever unmounted. The user's explicit "mark as unread" MUST survive a
+    // reload -- the honest persisted state is "2 unread".
     await screen.findByRole("button", { name: /^example blog, 2 unread$/i });
     expect(
       await screen.findByRole("button", { name: /^post one.*unread.*starred$/i }),

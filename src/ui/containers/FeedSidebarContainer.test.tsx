@@ -133,7 +133,7 @@ describe("FeedSidebarContainer", () => {
     expect(await screen.findByRole("button", { name: /ars technica.*unread/i })).toBeInTheDocument();
   });
 
-  it("re-fetches on a change to EITHER slot of the refreshSignal tuple, not just the first (Finding 4, Slice 10b correction round)", async () => {
+  it("re-fetches on a change to EITHER slot of the refreshSignal tuple, not just the first", async () => {
     // `refreshSignal` is `[feedListVersion, entryStateVersion]` -- this
     // container must react to either changing on its own, since either one
     // (a feed added/removed, or an entry's read/unread state changing) is a
@@ -243,13 +243,13 @@ describe("FeedSidebarContainer", () => {
   });
 
   /**
-   * Task 10.18: `deleteFeed` (idbLocalStore, cascading entry deletion since
-   * Slice 2) has been unreachable from the UI. Removal is destructive and
-   * irreversible (feed-subscriptions spec, "Removal is confirmed before it
-   * happens"), so the remove control MUST require an explicit confirmation
-   * step before `services.localStore.deleteFeed` is ever called.
+   * `deleteFeed` (idbLocalStore, cascading entry deletion) was previously
+   * unreachable from the UI. Removal is destructive and irreversible
+   * (feed-subscriptions spec, "Removal is confirmed before it happens"), so
+   * the remove control MUST require an explicit confirmation step before
+   * `services.localStore.deleteFeed` is ever called.
    */
-  describe("remove feed (task 10.18-10.19)", () => {
+  describe("remove feed", () => {
     it("does not call deleteFeed on the first click -- it requires an explicit confirmation step", async () => {
       const feed = makeFeed();
       const localStore = makeLocalStore({ listFeeds: vi.fn().mockResolvedValue([feed]) });

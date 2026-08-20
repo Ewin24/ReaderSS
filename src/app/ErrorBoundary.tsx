@@ -17,7 +17,7 @@ interface ErrorBoundaryState {
  *
  * This boundary catches such errors, shows a visible message naming what
  * happened, and stops the crash from propagating - it does not attempt any
- * automatic recovery or retry; that is left for a later slice to build on.
+ * automatic recovery or retry; that is left for future work to build on.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { error: null };

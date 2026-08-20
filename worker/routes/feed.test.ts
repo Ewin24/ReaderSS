@@ -115,9 +115,8 @@ describe("handleFeedRequest — timeout", () => {
   });
 
   /**
-   * Slice 4 correction, finding 1 (path A, CRITICAL — adversarial-refutation
-   * confirmed). The WHATWG Fetch spec says aborting a fetch's controller
-   * also errors its response body stream, not just the header-wait phase.
+   * The WHATWG Fetch spec says aborting a fetch's controller also errors
+   * its response body stream, not just the header-wait phase.
    * Before the fix, `readLimitedBody`'s catch only handled
    * `PayloadTooLargeError` and rethrow everything else uncaught at
    * `worker/routes/feed.ts:182`, so a mid-stream abort escaped this route
@@ -143,8 +142,8 @@ describe("handleFeedRequest — timeout", () => {
   });
 
   /**
-   * Slice 4 correction, finding 3. Before the fix, `AbortSignal.timeout` was
-   * created fresh inside the per-hop loop, so a redirect chain could consume
+   * Before the fix, `AbortSignal.timeout` was created fresh inside the
+   * per-hop loop, so a redirect chain could consume
    * up to ~MAX_REDIRECTS x UPSTREAM_TIMEOUT_MS while every individual hop
    * stayed under its own fresh budget. This test proves ONE deadline is
    * shared across the whole request: hop 3 would comfortably finish inside
@@ -203,8 +202,8 @@ describe("handleFeedRequest — redirects", () => {
   });
 
   /**
-   * Slice 4 correction, finding 2. Every redirect test in this file passes
-   * whenever the mock returns a 3xx `Response` directly, REGARDLESS of the
+   * Every redirect test in this file passes whenever the mock returns a
+   * 3xx `Response` directly, REGARDLESS of the
    * `redirect` option actually requested — the mock doesn't enforce it. This
    * is the whole SSRF redirect defence: the guard only sees each hop's
    * `Location` because `fetch` is called with `redirect: "manual"`. If a
@@ -224,8 +223,9 @@ describe("handleFeedRequest — redirects", () => {
   });
 
   /**
-   * The adversarial case from the Threat Matrix ("Relay target routing"):
-   * a redirect chain that is public on hop 1 and loopback on hop 2. The
+   * The attacker-controlled case from the Threat Matrix
+   * ("Relay target routing"): a redirect chain that is public on hop 1 and
+   * loopback on hop 2. The
    * guard must re-run on the Location header, not just on the original
    * `url` parameter.
    */
@@ -240,8 +240,8 @@ describe("handleFeedRequest — redirects", () => {
     expect(response.status).toBe(403);
     const body = await errorBody(response);
     expect(body.error.code).toBe("BLOCKED_TARGET");
-    // Slice 4 correction, finding 6: must name the hop that was ACTUALLY
-    // rejected (hop 2, the loopback metadata address), not hop 1's safe,
+    // Must name the hop that was ACTUALLY rejected (hop 2, the loopback
+    // metadata address), not hop 1's safe,
     // previously-validated hostname — misleading anyone triaging an SSRF
     // attempt on a multi-hop chain.
     expect(body.error.targetHost).toBe("169.254.169.254");
@@ -249,8 +249,8 @@ describe("handleFeedRequest — redirects", () => {
   });
 
   /**
-   * Slice 4 correction, finding 1 (path B). `new URL(location, guardResult.url)`
-   * was unguarded — a malformed `Location` on a 3xx response throws
+   * `new URL(location, guardResult.url)` was unguarded — a malformed
+   * `Location` on a 3xx response throws
    * synchronously and previously escaped `handleFeedRequest` entirely
    * instead of returning the documented JSON contract.
    */

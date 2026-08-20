@@ -68,7 +68,7 @@ describe("worker route table", () => {
   });
 
   /**
-   * Slice 4 correction, finding 1's defense-in-depth boundary. The per-hop
+   * The route boundary's defense-in-depth catch. The per-hop
    * try/catch inside `handleFeedRequest` (worker/routes/feed.ts) is expected
    * to map every error it can encounter to the JSON taxonomy, so this route
    * boundary catch should never fire in practice against real code — this

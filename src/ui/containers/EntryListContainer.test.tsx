@@ -47,8 +47,8 @@ function makeLocalStore(entry: Entry, overrides: Partial<LocalStorePort> = {}): 
 }
 
 const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
-// Services was extended with `feedSource` in Slice 10a; this container
-// doesn't use it, so a bare stub is enough to satisfy the `Services` type.
+// `Services` includes `feedSource`; this container doesn't use it, so a
+// bare stub is enough to satisfy the `Services` type.
 const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
 const feedParser: FeedParserPort = { parse: vi.fn() };
 
@@ -120,7 +120,7 @@ describe("EntryListContainer", () => {
     });
   });
 
-  it("calls onToggleError, not onEntryChanged, when the read toggle write fails (Finding 3, Slice 6 correction round)", async () => {
+  it("calls onToggleError, not onEntryChanged, when the read toggle write fails", async () => {
     const entry = makeEntry({ read: 0 });
     const localStore = makeLocalStore(entry, {
       putEntry: vi.fn().mockRejectedValue(new Error("IndexedDB quota exceeded")),

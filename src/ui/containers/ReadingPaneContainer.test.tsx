@@ -66,11 +66,11 @@ function makeLocalStore(entry: Entry, overrides: Partial<LocalStorePort> = {}): 
  * Renders `ReadingPaneContainer` with a LIVE entry prop that updates after
  * every `onEntryChanged` -- the same round trip `App.tsx`'s own
  * `handleEntryChanged` performs in production (re-fetch via `getEntry`,
- * feed the fresh object back down). Finding 1, Slice 10b correction round:
- * a STATIC entry prop (every other test in this file, before this one) can
- * never reproduce the auto-mark-on-open effect's revert bug, because the
- * effect's dependency on the live entry never actually changes if the
- * `entry` prop itself never changes between renders.
+ * feed the fresh object back down). A STATIC entry prop (every other test
+ * in this file, before this one) can never reproduce the auto-mark-on-open
+ * effect's revert bug, because the effect's dependency on the live entry
+ * never actually changes if the `entry` prop itself never changes between
+ * renders.
  */
 function LiveEntryHarness({
   initialEntry,
@@ -93,8 +93,8 @@ function LiveEntryHarness({
 }
 
 const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
-// Services was extended with `feedSource` in Slice 10a; this container
-// doesn't use it, so a bare stub is enough to satisfy the `Services` type.
+// `Services` includes `feedSource`; this container doesn't use it, so a
+// bare stub is enough to satisfy the `Services` type.
 const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
 const feedParser: FeedParserPort = { parse: vi.fn() };
 
@@ -154,7 +154,7 @@ describe("ReadingPaneContainer", () => {
     });
   });
 
-  it("calls onToggleError, not onEntryChanged, when the auto mark-as-read write fails on open (Finding 3, Slice 6 correction round)", async () => {
+  it("calls onToggleError, not onEntryChanged, when the auto mark-as-read write fails on open", async () => {
     const entry = makeEntry({ read: 0 });
     const localStore = makeLocalStore(entry, {
       putEntry: vi.fn().mockRejectedValue(new Error("IndexedDB quota exceeded")),
@@ -178,7 +178,7 @@ describe("ReadingPaneContainer", () => {
     expect(onEntryChanged).not.toHaveBeenCalled();
   });
 
-  it("calls onToggleError when the pane's star toggle write fails (Finding 3, Slice 6 correction round)", async () => {
+  it("calls onToggleError when the pane's star toggle write fails", async () => {
     const entry = makeEntry({ read: 1, starred: 0 });
     const localStore = makeLocalStore(entry, {
       putEntry: vi.fn().mockRejectedValue(new Error("IndexedDB quota exceeded")),
@@ -217,7 +217,7 @@ describe("ReadingPaneContainer", () => {
     });
   });
 
-  it("keeps an entry unread after an explicit 'mark as unread' click when the entry prop is LIVE, not static (Finding 1, Slice 10b correction round)", async () => {
+  it("keeps an entry unread after an explicit 'mark as unread' click when the entry prop is LIVE, not static", async () => {
     const entry = makeEntry({ read: 1, readChangedAt: "2026-08-01T00:00:00.000Z" });
     let currentEntry = entry;
     const localStore = makeLocalStore(entry, {
@@ -241,8 +241,9 @@ describe("ReadingPaneContainer", () => {
 
     // Give the LIVE entry prop time to round-trip back through
     // `onEntryChanged` -- exactly the fresh, changed `entry.read` value
-    // that, without Finding 1's fix, re-triggers the auto-mark-on-open
-    // effect and silently writes the entry back to `read: 1`.
+    // that, without the id-based guard in `ReadingPaneContainer`, would
+    // re-trigger the auto-mark-on-open effect and silently write the entry
+    // back to `read: 1`.
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(localStore.putEntry).toHaveBeenCalledTimes(1);

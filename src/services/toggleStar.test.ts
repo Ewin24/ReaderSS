@@ -6,8 +6,8 @@ import type { LocalStorePort } from "../ports/LocalStorePort";
 import { toggleStar } from "./toggleStar";
 
 // See toggleRead.test.ts's header comment: the full write-path matrix lives
-// once, in toggleEntryField.test.ts, instantiated for both field bindings
-// (Finding 6, Slice 6 correction round). This file keeps only the thin
+// once, in toggleEntryField.test.ts, instantiated for both field bindings.
+// This file keeps only the thin
 // tests specific to toggleStar's own field pair.
 
 const FIXED_NOW = "2024-06-01T00:00:00.000Z";

@@ -1,6 +1,6 @@
 /**
- * The shared write-path algorithm behind `toggleRead.ts` and `toggleStar.ts`
- * (Finding 6, Slice 6 correction round). Both services implemented the
+ * The shared write-path algorithm behind `toggleRead.ts` and `toggleStar.ts`.
+ * Both services implemented the
  * identical control flow -- fetch entry, report not-found, detect a no-op,
  * else stamp and write -- differing only in which value/timestamp field pair
  * they touch, with two duplicated test suites substituting field names. This
@@ -10,7 +10,7 @@
  * and `toggleStar` stay as thin, separately named, separately typed wrappers
  * so call sites remain unambiguous about which field they mean.
  *
- * Also owns Finding 3's fix: a `getEntry`/`putEntry` failure is caught here
+ * Also owns this: a `getEntry`/`putEntry` failure is caught here
  * and returned as a distinct `"error"` result instead of an unhandled
  * promise rejection. Callers (`EntryListContainer`, `ReadingPaneContainer`)
  * previously chained bare `.then(...)` with no `.catch`, so a rejected store
@@ -58,7 +58,7 @@ export async function toggleEntryField(
   const currentValue = entry[binding.valueField];
   if (currentValue === nextValue) {
     // No-op: timestamp untouched -- otherwise idle UI churn could beat a
-    // genuine remote change in Slice 9's merge.
+    // genuine remote change in the merge.
     return { status: "no-op", value: currentValue };
   }
 

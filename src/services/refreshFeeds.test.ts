@@ -243,7 +243,7 @@ describe("refreshFeeds", () => {
     );
   });
 
-  it("re-reads an entry's current state immediately before writing, so a toggle that lands during the fetch/parse window is not reverted (Finding 1, Slice 6 correction round)", async () => {
+  it("re-reads an entry's current state immediately before writing, so a toggle that lands during the fetch/parse window is not reverted", async () => {
     const feed = makeFeed();
     const staleExisting = makeEntry({
       contentHash: "old-hash",
@@ -254,7 +254,7 @@ describe("refreshFeeds", () => {
     });
     // Simulates a toggleRead write that landed in the store *after*
     // `listEntriesByFeed` was read but *before* this refresh's final write --
-    // the exact race window Finding 1 identified. If the write merges against
+    // the exact race window this test guards against. If the write merges against
     // the stale `listEntriesByFeed` snapshot instead of re-reading, the
     // user's toggle is silently reverted.
     const freshCurrent = makeEntry({
@@ -299,7 +299,7 @@ describe("refreshFeeds", () => {
     );
   });
 
-  it("keeps a refresh's status successful when its retention pruning fails, and still attempts every remaining prune (Finding 2, Slice 6 correction round)", async () => {
+  it("keeps a refresh's status successful when its retention pruning fails, and still attempts every remaining prune", async () => {
     const feed = makeFeed();
     const oldReadEntry1 = makeEntry({
       id: "feed-1:old-1",

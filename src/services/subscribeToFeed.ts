@@ -1,6 +1,6 @@
 /**
- * Wires `FeedSourcePort -> feedParser -> LocalStorePort` (design.md §8,
- * Slice 5). Sanitization deliberately stays out of this path entirely
+ * Wires `FeedSourcePort -> feedParser -> LocalStorePort` (design.md §8).
+ * Sanitization deliberately stays out of this path entirely
  * (design.md §5): what gets persisted here is the feed's raw HTML, exactly
  * as `feedParser` normalized it. Nothing is written to the store unless
  * both the fetch AND the parse succeed (feed-subscriptions spec, "Add a
@@ -8,25 +8,21 @@
  * failed").
  *
  * The feed row and its entries are written in one atomic call
- * (`LocalStorePort.addFeedWithEntries`, Finding 1 of the Slice 5 correction
- * round; changed to the create-only `addFeedWithEntries` variant in Finding
- * 2 of the Slice 10b correction round) rather than a `putFeed` + `putEntry`
- * loop: a rejection partway through must never leave a feed persisted with
+ * (`LocalStorePort.addFeedWithEntries`, the create-only variant) rather
+ * than a `putFeed` + `putEntry` loop: a rejection partway through must never leave a feed persisted with
  * only some of its entries. A rejection from that call surfaces as the
  * typed `persist-failed` result below, not an escaping exception.
  *
  * The existence pre-check below (`getFeed`) and the write are NOT treated
- * as sufficient on their own to prevent a duplicate (Finding 2, Slice 10b
- * correction round): they are two separate steps, so two same-origin tabs
- * submitting the same URL in the same moment could both pass the check
+ * as sufficient on their own to prevent a duplicate: they are two separate
+ * steps, so two same-origin tabs submitting the same URL in the same moment could both pass the check
  * before either writes. The pre-check stays, purely as an optimization --
  * it avoids a network fetch for the overwhelmingly common single-tab case
  * -- but the actual duplicate decision is made atomically by
  * `addFeedWithEntries` itself, which is IndexedDB's own keyed `add()`
  * under the hood and therefore cannot lose this race.
  *
- * RETENTION IS STILL DELIBERATELY NOT ENFORCED HERE (Finding 2 of the
- * Slice 5 correction round; now confirmed unchanged by Slice 6):
+ * RETENTION IS STILL DELIBERATELY NOT ENFORCED HERE:
  * `domain/retention/prunePolicy.selectPrunableEntries` has no call site in
  * this service, on purpose. design.md §3 places retention "after every
  * successful refresh", and that is now wired -- into `services/refreshFeeds.ts`,
@@ -74,7 +70,7 @@ export type SubscribeToFeedResult =
   // that status's own message ("Could not reach ...") would be false here --
   // the feed WAS reached, it was just too large to relay.
   | { readonly status: "too-large"; readonly message: string }
-  // Finding 1, Slice 5 correction round: the fetch and parse both
+  // The fetch and parse both
   // succeeded, but the atomic local-store write (`putFeedWithEntries`)
   // rejected -- e.g. an IndexedDB quota error. Surfaced as a defined
   // outcome instead of letting the exception escape this function.
@@ -156,7 +152,7 @@ export async function subscribeToFeed(
   }
 
   if (writeResult === "duplicate") {
-    // Finding 2, Slice 10b correction round: a concurrent writer -- most
+    // A concurrent writer -- most
     // realistically a second same-origin tab -- won the atomic create
     // between the existence pre-check above and this write. Re-read the
     // row that writer actually persisted so the caller gets an honest

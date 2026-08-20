@@ -9,11 +9,10 @@ import { ServicesProvider } from "../../app/providers/ServicesContext";
 import { RefreshContainer } from "./RefreshContainer";
 
 /**
- * Task 10.16: a refresh control invokes the real `refreshFeeds` (never
- * mocked); per-feed `lastError` entries render through the existing
- * `RefreshErrorChip` (Slice 6) -- ONE chip per failed feed, never one
- * aggregated message (feed-fetching spec "Per-feed error isolation" and
- * "Partial refresh failure").
+ * A refresh control invokes the real `refreshFeeds` (never mocked); per-feed
+ * `lastError` entries render through the existing `RefreshErrorChip` -- ONE
+ * chip per failed feed, never one aggregated message (feed-fetching spec
+ * "Per-feed error isolation" and "Partial refresh failure").
  */
 const clock: ClockPort = { now: () => "2026-08-19T10:00:00.000Z" };
 

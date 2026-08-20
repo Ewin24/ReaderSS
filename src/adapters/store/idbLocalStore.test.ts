@@ -168,7 +168,7 @@ describe("entries — read/starred indexes", () => {
   });
 });
 
-describe("entries — starred/starredChangedAt write guard (Finding 4)", () => {
+describe("entries — starred/starredChangedAt write guard", () => {
   it("rejects starred=1 with starredChangedAt=null through the port", async () => {
     await expect(
       store.putEntry(entry({ id: "feed:bad-starred", feedId: "feed", starred: 1 })),
@@ -177,7 +177,7 @@ describe("entries — starred/starredChangedAt write guard (Finding 4)", () => {
 
   it("demonstrates the underlying hazard when the guard is bypassed: by-starred-changed is a compound index, and a null member silently hides the record from it", async () => {
     // Bypass the port's guard entirely and write straight through the raw
-    // db, the way a future bug (e.g. Slice 6's toggleStar forgetting to
+    // db, the way a future bug (e.g. toggleStar forgetting to
     // stamp the timestamp) would.
     await db.put("entries", entry({ id: "feed:hidden-starred", feedId: "feed", starred: 1 }));
 
@@ -193,7 +193,7 @@ describe("entries — starred/starredChangedAt write guard (Finding 4)", () => {
   });
 });
 
-describe("putFeedWithEntries — atomic feed+entries write (Finding 1)", () => {
+describe("putFeedWithEntries — atomic feed+entries write", () => {
   it("persists the feed and every entry together in one transaction", async () => {
     const f = feed({ id: "https://atomic.example/feed.xml" });
     const e1 = entry({ id: "https://atomic.example/feed.xml:1", feedId: f.id });
@@ -208,7 +208,7 @@ describe("putFeedWithEntries — atomic feed+entries write (Finding 1)", () => {
   it("rolls back the feed AND every already-queued entry when a later entry in the batch is invalid", async () => {
     const f = feed({ id: "https://rollback.example/feed.xml" });
     const validEntry = entry({ id: "https://rollback.example/feed.xml:1", feedId: f.id });
-    // Same invalid shape Finding 4's `assertValidEntryState` already rejects
+    // The same invalid shape `assertValidEntryState` already rejects
     // through `putEntry`: starred=1 with a null starredChangedAt.
     const invalidEntry = entry({
       id: "https://rollback.example/feed.xml:2",
@@ -222,7 +222,7 @@ describe("putFeedWithEntries — atomic feed+entries write (Finding 1)", () => {
 
     // Not a partial write: the feed row and the entry that WAS valid must
     // both be rolled back along with the invalid one -- this is the
-    // atomicity the Slice 5 correction round added (Finding 1), replacing
+    // atomicity `putFeedWithEntries` adds, replacing
     // the previous independent-auto-committing `putFeed` + `putEntry` loop.
     expect(await store.getFeed(f.id)).toBeUndefined();
     expect(await store.getEntry(validEntry.id)).toBeUndefined();
@@ -230,7 +230,7 @@ describe("putFeedWithEntries — atomic feed+entries write (Finding 1)", () => {
   });
 });
 
-describe("addFeedWithEntries — atomic create-only write (Finding 2, Slice 10b correction round)", () => {
+describe("addFeedWithEntries — atomic create-only write", () => {
   it("persists the feed and every entry together, the same as putFeedWithEntries, when no feed with this id exists yet", async () => {
     const f = feed({ id: "https://atomic-add.example/feed.xml" });
     const e1 = entry({ id: "https://atomic-add.example/feed.xml:1", feedId: f.id });
@@ -242,7 +242,7 @@ describe("addFeedWithEntries — atomic create-only write (Finding 2, Slice 10b 
     expect((await store.listEntriesByFeed(f.id)).map((e) => e.id)).toEqual([e1.id]);
   });
 
-  it("rejects with 'duplicate' instead of overwriting, when a feed with this id already exists -- the two-tab race Finding 2 closes", async () => {
+  it("rejects with 'duplicate' instead of overwriting, when a feed with this id already exists, closing a two-tab race", async () => {
     const f = feed({ id: "https://race.example/feed.xml", title: "First writer's title" });
     const firstEntry = entry({ id: "https://race.example/feed.xml:1", feedId: f.id });
     await store.addFeedWithEntries(f, [firstEntry]);

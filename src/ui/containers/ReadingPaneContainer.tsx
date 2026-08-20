@@ -6,16 +6,12 @@
  * unread entry marks it read through the same single `toggleRead` writer,
  * never by constructing a `readChangedAt` value itself.
  *
- * Finding 3 (Slice 6 correction round): a failed write -- including the
- * automatic mark-as-read on open -- is reported through `onToggleError`,
- * never left as a silent no-op. See `EntryListContainer.tsx`'s matching
- * comment for the full rationale.
+ * A failed write -- including the automatic mark-as-read on open -- is
+ * reported through `onToggleError`, never left as a silent no-op. See
+ * `EntryListContainer.tsx`'s matching comment for the full rationale.
  *
- * NOT YET MOUNTED into `App.tsx`/`main.tsx` (Finding 5, Slice 6 correction
- * round) -- same reason and same resolution as `EntryListContainer.tsx`:
- * no composition root and no "add a feed" UI exist yet to give it real
- * data. Slice 10 (composition root + add-feed UI) is where this container
- * gets mounted.
+ * This container is mounted into `App.tsx` via the composition root
+ * (`buildServices.ts`), same as `EntryListContainer.tsx`.
  */
 import { useCallback, useEffect, useRef } from "preact/hooks";
 import { useServices } from "../../app/providers/ServicesContext";
@@ -55,10 +51,10 @@ export function ReadingPaneContainer({
   );
 
   // Tracks the id of the entry this effect has already made its one
-  // auto-mark-as-read attempt for. Finding 1, Slice 10b correction round:
-  // `entry` is a LIVE object from App's own state, not a static prop -- once
-  // this effect writes `read: 1`, App re-renders with the fresh entry and
-  // hands it back down here. Without this guard, that re-render's changed
+  // auto-mark-as-read attempt for. `entry` is a LIVE object from App's own
+  // state, not a static prop -- once this effect writes `read: 1`, App
+  // re-renders with the fresh entry and hands it back down here. Without
+  // this guard, that re-render's changed
   // `entry.read` would re-trigger the effect and immediately overwrite a
   // user's explicit "Mark as unread" click back to `read: 1`, the instant
   // they made it. Gating on entry id (not `entry.read`) means the auto-mark

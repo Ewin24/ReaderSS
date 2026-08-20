@@ -4,7 +4,7 @@ export interface FeedSidebarItem {
   id: string;
   title: string;
   folder: string | null;
-  /** feed-subscriptions spec, "List feeds with metadata" (Slice 10a).
+  /** feed-subscriptions spec, "List feeds with metadata".
    * Computed by whoever supplies this list -- `FeedSidebarContainer` for
    * the real, store-backed sidebar; `App.tsx` for its test-only override
    * path -- never by this presentational component itself. */

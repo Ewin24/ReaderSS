@@ -62,7 +62,7 @@ describe("DomPurifySanitizer", () => {
     expect(sanitizer.sanitize('<p style="color:red">x</p>', "k10")).not.toContain("style=");
   });
 
-  it("neutralizes a <noscript> mXSS payload (Finding 5): a parser-context-switch trick using a nested title attribute", () => {
+  it("neutralizes a <noscript> mXSS payload: a parser-context-switch trick using a nested title attribute", () => {
     // Classic noscript mXSS shape: the `</noscript>` embedded inside the
     // `title` attribute value exploits the parsing-context switch between
     // "noscript content is parsed as text" (scripting enabled) and "parsed
@@ -78,7 +78,7 @@ describe("DomPurifySanitizer", () => {
     expect(clean).not.toContain("<img");
   });
 
-  it("strips the srcset attribute from images (Finding 5, FORBID_ATTR)", () => {
+  it("strips the srcset attribute from images (FORBID_ATTR)", () => {
     const sanitizer = new DomPurifySanitizer();
     const clean = sanitizer.sanitize(
       '<img src="https://example.com/a.png" srcset="https://evil.example/x.png 1x">',
@@ -169,7 +169,7 @@ describe("DomPurifySanitizer", () => {
     expect(afterEviction).toContain("entry-0-changed");
   });
 
-  it("does not memoize a single sanitized document larger than MAX_CACHEABLE_ENTRY_BYTES (Finding 4)", () => {
+  it("does not memoize a single sanitized document larger than MAX_CACHEABLE_ENTRY_BYTES", () => {
     // The 100-entry cap alone bounds key COUNT, not memory: one hundred
     // very large sanitized documents is still one hundred very large
     // documents held in memory. An oversized entry is sanitized and
@@ -187,7 +187,7 @@ describe("DomPurifySanitizer", () => {
     expect(second).not.toContain("x".repeat(100));
   });
 
-  it("evicts the oldest cached entries once total cached bytes exceed MAX_TOTAL_CACHE_BYTES, even though key count stays under the 100-entry capacity (Finding 4)", () => {
+  it("evicts the oldest cached entries once total cached bytes exceed MAX_TOTAL_CACHE_BYTES, even though key count stays under the 100-entry capacity", () => {
     const sanitizer = new DomPurifySanitizer();
     // Each chunk sits comfortably under the per-entry skip threshold, so
     // every one of these calls IS memoized individually -- the eviction

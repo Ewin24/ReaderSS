@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { describeError } from "./describeError";
 
 /**
- * Finding 5, Slice 10b correction round: the same three-line function was
- * copied into eight files (`App.tsx`, `EntryListContainer`,
+ * The same three-line function was copied into eight files (`App.tsx`,
+ * `EntryListContainer`,
  * `ReadingPaneContainer`, `FeedSidebarContainer`, `RefreshContainer`,
  * `AddFeedContainer`, `toggleEntryField.ts`, `bootstrap.tsx`), each a
  * separate chance to miss a future change (e.g. unwrapping a domain error,

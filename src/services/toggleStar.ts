@@ -2,8 +2,8 @@
  * The exact structural mirror of `toggleRead.ts`, for `Entry.starred` /
  * `Entry.starredChangedAt` (design.md §4, entry-reading spec "Starred
  * state"). The ONLY writer of these two fields. A thin, named, field-specific
- * wrapper around the shared `toggleEntryField` algorithm (Finding 6, Slice 6
- * correction round). See `toggleRead.ts`'s module doc comment for the full
+ * wrapper around the shared `toggleEntryField` algorithm. See
+ * `toggleRead.ts`'s module doc comment for the full
  * rationale -- it applies here unchanged, field for field.
  */
 import type { ClockPort } from "../ports/ClockPort";

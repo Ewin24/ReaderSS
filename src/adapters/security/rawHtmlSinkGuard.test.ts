@@ -21,18 +21,18 @@ import { describe, expect, it } from "vitest";
  * oversight -- a raw-HTML sink written only inside a test file can never
  * reach a real user's DOM.
  *
- * Sink coverage (Finding 6, Slice 5 correction round): beyond the original
- * four sinks (`dangerouslySetInnerHTML`, `.innerHTML`, `.outerHTML`,
+ * Sink coverage: beyond the original four sinks
+ * (`dangerouslySetInnerHTML`, `.innerHTML`, `.outerHTML`,
  * `insertAdjacentHTML`), this also flags `document.write(`,
  * `.parseFromString(` (DOMParser), `.createContextualFragment(` (Range),
  * `.setHTMLUnsafe(`, and `.srcdoc` -- and, for every property-name sink
  * above, its computed bracket-access form with a literal string key (e.g.
- * `el["innerHTML"]`), closing the specific gap Finding 7 identified: the
- * original regex and the ESLint `MemberExpression[property.name=...]`
- * selectors both only match non-computed dot-property access.
+ * `el["innerHTML"]`), closing a gap in the original regex and the ESLint
+ * `MemberExpression[property.name=...]` selectors, which both only match
+ * non-computed dot-property access.
  *
- * KNOWN, DELIBERATE, UNCOVERED GAP (Finding 7): a computed bracket access
- * built from a STRING-CONCATENATION-OBFUSCATED key, e.g.
+ * KNOWN, DELIBERATE, UNCOVERED GAP: a computed bracket access built from a
+ * STRING-CONCATENATION-OBFUSCATED key, e.g.
  * `el["inner" + "HTML"]`, is NOT detected by this regex, and cannot be
  * expressed as an ESLint AST selector matching a literal `property.value`
  * either, because the property is a `BinaryExpression`, not a `Literal`, at
@@ -53,7 +53,7 @@ const DOMPURIFY_ALLOWED_DIR = join("src", "adapters", "security") + "\\";
 const DOMPURIFY_ALLOWED_DIR_POSIX = "src/adapters/security/";
 
 // Property-name sinks matched both as plain dot-property access AND as
-// computed bracket access with a literal string key (Finding 7's covered
+// computed bracket access with a literal string key (the covered
 // half of the blind spot -- see the module doc comment above for the
 // deliberately uncovered, string-concatenation-obfuscated half).
 const PROPERTY_SINK_NAMES = ["innerHTML", "outerHTML", "srcdoc"] as const;
@@ -154,7 +154,7 @@ describe("raw HTML sink guard (design.md §5, enforcement layer 3 of 3)", () => 
   });
 });
 
-describe("RAW_HTML_SINK_PATTERN coverage (Finding 6 + 7, Slice 5 correction round)", () => {
+describe("RAW_HTML_SINK_PATTERN coverage", () => {
   it.each([
     ["document.write(", 'document.write("<img onerror=alert(1)>");'],
     ["DOMParser#parseFromString(", 'new DOMParser().parseFromString(html, "text/html");'],
@@ -174,7 +174,7 @@ describe("RAW_HTML_SINK_PATTERN coverage (Finding 6 + 7, Slice 5 correction roun
     expect(RAW_HTML_SINK_PATTERN.test(snippet)).toBe(expected);
   });
 
-  it("does NOT flag computed bracket access built from string concatenation (documented, deliberate residual gap -- Finding 7)", () => {
+  it("does NOT flag computed bracket access built from string concatenation (documented, deliberate residual gap)", () => {
     // This is the specific case the module doc comment above names as
     // uncoverable by a static regex (or by an ESLint AST selector matching
     // a literal `property.value`): the key is assembled at runtime, so no

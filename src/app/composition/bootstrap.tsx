@@ -4,8 +4,8 @@
  * project's `include` glob -- see `vite.config.ts`'s `app` project, scoped
  * to `src/{adapters,services,ui,app,styles}/**`).
  *
- * Finding 1 (Slice 10a correction round, BLOCKER): `buildServices()` opens
- * the real IndexedDB database before the first `render()`. If it rejects --
+ * `buildServices()` opens the real IndexedDB database before the first
+ * `render()`. If it rejects --
  * `adapters/store/schema.ts`'s own `DatabaseBlockedError`/timeout (added to
  * fix a two-tab hang) is one real path there, Safari private browsing is
  * another -- there was previously no `.catch()` anywhere and no component

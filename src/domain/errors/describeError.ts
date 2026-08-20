@@ -1,7 +1,6 @@
 /**
- * Normalizes any thrown/rejected value into a human-readable message
- * (Finding 5, Slice 10b correction round). Previously duplicated verbatim
- * in eight files -- `App.tsx`, `EntryListContainer.tsx`,
+ * Normalizes any thrown/rejected value into a human-readable message.
+ * Previously duplicated verbatim in eight files -- `App.tsx`, `EntryListContainer.tsx`,
  * `ReadingPaneContainer.tsx`, `FeedSidebarContainer.tsx`,
  * `RefreshContainer.tsx`, `AddFeedContainer.tsx`, `toggleEntryField.ts`, and
  * `bootstrap.tsx` -- each a separate chance to miss a future change to how

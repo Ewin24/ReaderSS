@@ -1,17 +1,16 @@
 /**
- * App shell layout and composition (Slice 3 built the fixture-driven shell;
- * Slice 10a wires it to real data). `feeds`/`entries` stay as an OPTIONAL
+ * App shell layout and composition. `feeds`/`entries` stay as an OPTIONAL
  * test-only override (`AppProps`) -- when supplied, `App` renders exactly
- * that data synchronously, which is what every pre-10a layout/focus/
- * selection/empty-state test still exercises. Production (`main.tsx`) never
- * passes them: with no override, `App` loads feeds and the selected feed's
+ * that data synchronously, which is what every layout/focus/selection/
+ * empty-state test still exercises. Production (`main.tsx`) never passes
+ * them: with no override, `App` loads feeds and the selected feed's
  * entries from `services.localStore` on mount and on selection change.
  *
  * Regardless of data source, `EntryListContainer`/`ReadingPaneContainer`
- * (Slice 6, never mounted until now) render the list and reading pane, so
- * every read/unread and star/unstar toggle always routes through the real
- * `toggleRead`/`toggleStar` services -- even in override/test mode, which is
- * why every `App` test now needs a `ServicesProvider` ancestor.
+ * render the list and reading pane, so every read/unread and star/unstar
+ * toggle always routes through the real `toggleRead`/`toggleStar` services
+ * -- even in override/test mode, which is why every `App` test now needs a
+ * `ServicesProvider` ancestor.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { FeedSidebar, type FeedSidebarItem } from "../ui/components/FeedSidebar";
@@ -31,7 +30,7 @@ import "../styles/grid.css";
 export interface AppProps {
   /** Test-only override: when supplied, `App` renders exactly this data
    * instead of loading from `services.localStore`. Production callers
-   * (`main.tsx`) never pass these -- the Slice 3 fixture defaults
+   * (`main.tsx`) never pass these -- the fixture defaults
    * (`src/app/fixtures.ts`) are no longer the runtime default. */
   feeds?: AppFeed[];
   entries?: AppEntry[];
@@ -84,12 +83,11 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   const [feedsState, setFeedsState] = useState<LoadState>(usingOverride ? LOADED : { status: "loading" });
   const [entriesState, setEntriesState] = useState<LoadState>(LOADED);
   const [toggleErrorMessage, setToggleErrorMessage] = useState<string | null>(null);
-  // Findings 3 & 4, Slice 10b correction round: the three refresh-signal
-  // counters (feed list changed, an entry's state changed, a manual refresh
-  // completed) and their bump handlers used to live inline here as three
-  // separate `useState`s, and `FeedSidebarContainer`'s prop was an opaque
-  // arithmetic sum of two of them. See `useRefreshSignals.ts` for the full
-  // rationale.
+  // The three refresh-signal counters (feed list changed, an entry's state
+  // changed, a manual refresh completed) and their bump handlers used to
+  // live inline here as three separate `useState`s, and
+  // `FeedSidebarContainer`'s prop was an opaque arithmetic sum of two of
+  // them. See `useRefreshSignals.ts` for the full rationale.
   const {
     feedListVersion,
     entriesVersion,

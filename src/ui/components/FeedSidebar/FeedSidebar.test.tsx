@@ -55,7 +55,7 @@ describe("FeedSidebar", () => {
     expect(screen.getByText(/no feeds yet/i)).toBeInTheDocument();
   });
 
-  describe("unread counts (Slice 10a, feed-subscriptions spec 'List feeds with metadata')", () => {
+  describe("unread counts (feed-subscriptions spec 'List feeds with metadata')", () => {
     it("displays each feed's unread count", () => {
       render(
         <FeedSidebar

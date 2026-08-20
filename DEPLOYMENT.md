@@ -5,7 +5,7 @@ in-Worker; each item is a one-time or per-deploy dashboard/CLI action.
 
 ## Cloudflare dashboard
 
-- [ ] **Rate-limit `/api/feed`** (added Slice 4, design.md §2 "Abuse: an open
+- [ ] **Rate-limit `/api/feed`** (design.md §2 "Abuse: an open
       fetch relay is an open proxy" — "Quota exhaustion" row). Configure a
       Cloudflare WAF rate-limiting rule scoped to `/api/feed`, keyed per
       client IP, at roughly 60 requests/minute. This bounds quota exhaustion

@@ -5,20 +5,17 @@
  * callbacks out).
  *
  * Loads its own feed list independently of `App.tsx`'s own
- * `services.localStore.listFeeds()` call (Unit 10a's task 10.7, used for
- * entry-list/selection purposes) rather than receiving `feeds` as a prop --
- * a deliberate, task-specified split (design.md §8's Slice 10 task list),
+ * `services.localStore.listFeeds()` call (used for entry-list/selection
+ * purposes) rather than receiving `feeds` as a prop -- a deliberate split,
  * not an oversight: this container also needs every feed's unread count,
  * which requires its own `listEntriesByFeed` call per feed regardless of
  * who owns the base feed list. A shared feed-list cache is a reasonable
- * follow-up, not built here to keep this unit's scope to what the task list
- * specifies.
+ * follow-up, not built here to keep this container's scope focused.
  *
  * Distinguishes three states honestly (per the standing "no false empty
- * state" requirement carried into Unit 10a's own scope note): loading,
- * loaded (possibly genuinely empty), and load-error -- an empty list that
- * actually means the store could not be read is not information the user
- * can act on.
+ * state" requirement): loading, loaded (possibly genuinely empty), and
+ * load-error -- an empty list that actually means the store could not be
+ * read is not information the user can act on.
  */
 import { useCallback, useEffect, useState } from "preact/hooks";
 import { useServices } from "../../app/providers/ServicesContext";
@@ -32,13 +29,12 @@ export interface FeedSidebarContainerProps {
    * `[feedListVersion, entryStateVersion]` (see `useRefreshSignals.ts`):
    * bumped by a parent to force a re-fetch of feeds and unread counts,
    * either when the feed list itself changes (a feed added/removed) or when
-   * an entry's read/unread or star/unstar state changes (Finding 2, Slice
-   * 10a correction round; the tuple form is Finding 4, Slice 10b correction
-   * round -- previously a single summed number, an opaque combined value
-   * with an implicit "both are monotonic" invariant). Destructured into two
-   * separate effect dependencies below, not depended on by tuple identity,
-   * so a re-render that creates an equal-valued-but-new array does not
-   * trigger a needless re-fetch.
+   * an entry's read/unread or star/unstar state changes -- previously a
+   * single summed number, an opaque combined value with an implicit "both
+   * are monotonic" invariant, before becoming this explicit tuple.
+   * Destructured into two separate effect dependencies below, not depended
+   * on by tuple identity, so a re-render that creates an
+   * equal-valued-but-new array does not trigger a needless re-fetch.
    */
   refreshSignal?: readonly [feedListVersion: number, entryStateVersion: number];
   /** Called when the feed/unread-count load fails, so a parent can surface
@@ -46,11 +42,11 @@ export interface FeedSidebarContainerProps {
    * already renders its own distinct error message either way. */
   onLoadError?: (message: string) => void;
   /**
-   * Called after a feed is successfully removed (task 10.18-10.19), so a
-   * parent can react -- e.g. `App.tsx` clears the current selection if the
-   * removed feed was the one selected. `deleteFeed` (`idbLocalStore`,
-   * cascading entry deletion since Slice 2) was unreachable from the UI
-   * until this task; `FeedSidebar`'s own confirmation step guarantees this
+   * Called after a feed is successfully removed, so a parent can react --
+   * e.g. `App.tsx` clears the current selection if the removed feed was the
+   * one selected. `deleteFeed` (`idbLocalStore`, cascading entry deletion)
+   * was previously unreachable from the UI; `FeedSidebar`'s own
+   * confirmation step guarantees this
    * container only ever calls `deleteFeed` after the user explicitly
    * confirmed (feed-subscriptions spec, "Removal is confirmed before it
    * happens").

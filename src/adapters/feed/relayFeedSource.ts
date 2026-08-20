@@ -45,9 +45,9 @@ function relayUnavailableResult(): { status: "error"; code: "RELAY_UNAVAILABLE";
 }
 
 /**
- * Slice 4 correction, finding 4: the Worker's own cumulative deadline
+ * The Worker's own cumulative deadline
  * (worker/routes/feed.ts's UPSTREAM_TIMEOUT_MS) bounds total relay-to-origin
- * latency to 10s regardless of redirect count (finding 3's fix). This
+ * latency to 10s regardless of redirect count. This
  * client-side budget is set slightly ABOVE that bound -- 2s of slack for the
  * relay's own request/response processing, TLS handshake, and network
  * round-trip -- so a hung or unreachable relay fails the client visibly

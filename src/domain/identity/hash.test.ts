@@ -6,7 +6,7 @@ describe("shortHash", () => {
     expect(shortHash("a")).toBe(shortHash("a"));
   });
 
-  it("produces a 64-bit digest (16 hex chars) — collision space must be wide enough for a value that also serves as the entries object store's IndexedDB primary key (Finding 5: a collision there silently overwrites an unrelated article via putEntry's upsert)", () => {
+  it("produces a 64-bit digest (16 hex chars) — collision space must be wide enough for a value that also serves as the entries object store's IndexedDB primary key: a collision there silently overwrites an unrelated article via putEntry's upsert", () => {
     expect(shortHash("anything")).toMatch(/^[0-9a-f]{16}$/);
   });
 

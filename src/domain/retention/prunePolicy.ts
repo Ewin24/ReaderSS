@@ -29,8 +29,7 @@ export interface PrunableEntry {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Finding 2, Slice 5 correction round -- resolved in Slice 6: this module's
- * one production call site is now `services/refreshFeeds.ts`, run after
+ * This module's one production call site is now `services/refreshFeeds.ts`, run after
  * every successful per-feed refresh (design.md §3's placement). The initial
  * `subscribeToFeed.ts` ingestion path still does not call it (see that
  * file's header comment) -- a large feed's very first fetch is unbounded

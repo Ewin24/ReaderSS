@@ -3,7 +3,7 @@
  * (design.md §2 "The Relay Contract"). The only production implementation
  * is `adapters/feed/relayFeedSource.ts`. This port hands back the raw
  * body text and conditional-GET validators only — parsing the body into
- * domain `Entry` objects is Slice 5's `feedParser`, not this port's job.
+ * domain `Entry` objects is `feedParser`'s job, not this port's.
  */
 
 import { RELAY_ERROR_CODES } from "../../shared/feedErrorCodes";

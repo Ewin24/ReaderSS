@@ -173,7 +173,7 @@ describe("subscribeToFeed", () => {
     expect(localStore.addFeedWithEntries).not.toHaveBeenCalled();
   });
 
-  it("returns a typed persist-failed result, instead of an escaping exception, when the atomic feed+entries write rejects (Finding 1)", async () => {
+  it("returns a typed persist-failed result, instead of an escaping exception, when the atomic feed+entries write rejects", async () => {
     const localStore = makeLocalStore({
       addFeedWithEntries: vi.fn().mockRejectedValue(new Error("simulated IndexedDB quota error")),
     });
@@ -227,7 +227,7 @@ describe("subscribeToFeed", () => {
     expect(feedSource.fetchFeed).not.toHaveBeenCalled();
   });
 
-  it("reports duplicate, not subscribed, when a concurrent writer wins the atomic create between the pre-check and the write (Finding 2, Slice 10b correction round)", async () => {
+  it("reports duplicate, not subscribed, when a concurrent writer wins the atomic create between the pre-check and the write", async () => {
     // Simulates the two-tab race: `getFeed` (the pre-check above) still
     // reports `undefined` -- no local knowledge of a duplicate yet -- but
     // by the time this call's own write reaches the store, another writer

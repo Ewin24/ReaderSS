@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest";
 import { RELAY_ERROR_CODES } from "./feedErrorCodes";
 
 /**
- * Slice 4 correction round, finding 5: `worker/routes/feed.ts`'s `ErrorCode`
- * union and `src/ports/FeedSourcePort.ts`'s `FEED_FETCH_ERROR_CODES` array
+ * `worker/routes/feed.ts`'s `ErrorCode` union and
+ * `src/ports/FeedSourcePort.ts`'s `FEED_FETCH_ERROR_CODES` array
  * used to define the same eight codes independently in two runtimes, with
  * nothing enforcing the mirror. This module is now the single source of
  * truth both sides import, so a code added to only one side is a compile

@@ -40,7 +40,7 @@ export type TargetUrlGuardResult =
        * (`null` only for `reason: "unparseable"`, where no hostname exists
        * to report). Callers (`worker/routes/feed.ts`) use this to report
        * the hop that was actually blocked, not a previously-validated hop's
-       * hostname (Slice 4 correction, finding 6).
+       * hostname.
        */
       readonly hostname: string | null;
     };

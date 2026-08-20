@@ -125,9 +125,9 @@ describe("RelayFeedSource.fetchFeed", () => {
   });
 
   /**
-   * Slice 4 correction, finding 4. `fetch` used to be called with no
-   * `signal` at all, so a slow relay (cold start, throttling, or the
-   * unhandled server-side path this same review's finding 1 fixed) left the
+   * `fetch` used to be called with no
+   * `signal` at all, so a slow relay (cold start, throttling, or an
+   * unhandled server-side path) left the
    * client waiting with no bounded worst case beyond the browser's own
    * generic timeout. `CLIENT_TIMEOUT` must be distinguishable from the
    * generic `NETWORK_ERROR` so the failure is specific, not generic.

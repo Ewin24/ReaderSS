@@ -17,10 +17,9 @@ describe("RefreshErrorChip", () => {
     // per-feed refresh failure is urgent enough to announce immediately
     // (role="alert"). This test pins ONLY this component's own role. The
     // planned comparison against a passive, already-known offline state
-    // (Slice 7's OfflineBanner, expected to use role="status" instead) is
+    // (the future OfflineBanner, expected to use role="status" instead) is
     // NOT assertable here -- OfflineBanner does not exist yet -- and is
-    // tracked as a Slice 7 task instead of implied by this test's name
-    // (Finding 4, Slice 6 correction round).
+    // tracked as a separate task instead of implied by this test's name.
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 

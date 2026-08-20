@@ -51,9 +51,9 @@ function makeLocalStore(entry: Entry | undefined, overrides: Partial<LocalStoreP
 
 /**
  * The full behavioral matrix, written once and instantiated for both field
- * bindings (Finding 6, Slice 6 correction round -- the same shape as
- * `resolveField`'s property tests in design.md §4, which the review cited as
- * precedent for shrinking rather than growing the test matrix). `toggleRead`
+ * bindings -- the same shape as
+ * `resolveField`'s property tests in design.md §4, which shrinks rather
+ * than grows the test matrix. `toggleRead`
  * and `toggleStar` keep only thin per-field tests asserting the correct
  * field pair is bound; this file owns every shared case.
  */
@@ -111,7 +111,7 @@ describe.each(BINDINGS)("toggleEntryField ($name)", ({ binding }) => {
     expect(localStore.putEntry).not.toHaveBeenCalled();
   });
 
-  it("surfaces a getEntry failure as a distinct error result instead of an unhandled rejection (Finding 3, Slice 6 correction round)", async () => {
+  it("surfaces a getEntry failure as a distinct error result instead of an unhandled rejection", async () => {
     const localStore = makeLocalStore(undefined, {
       getEntry: vi.fn().mockRejectedValue(new Error("IndexedDB connection lost")),
     });
@@ -122,7 +122,7 @@ describe.each(BINDINGS)("toggleEntryField ($name)", ({ binding }) => {
     expect(localStore.putEntry).not.toHaveBeenCalled();
   });
 
-  it("surfaces a putEntry failure as a distinct error result instead of an unhandled rejection (Finding 3, Slice 6 correction round)", async () => {
+  it("surfaces a putEntry failure as a distinct error result instead of an unhandled rejection", async () => {
     const entry = makeEntry({ [binding.valueField]: 0, [binding.timestampField]: null });
     const localStore = makeLocalStore(entry, {
       putEntry: vi.fn().mockRejectedValue(new Error("IndexedDB quota exceeded")),

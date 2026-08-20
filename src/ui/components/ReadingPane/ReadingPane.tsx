@@ -71,9 +71,9 @@ function ReadingPaneContent({ entry, headingRef }: ReadingPaneContentProps) {
       {body && (
         // The single enforced sanitization choke point (design.md §5):
         // `body` is raw, feed-supplied HTML and must never reach the DOM
-        // through plain text interpolation (Slice 6's risk-lens finding --
-        // Preact escapes `{body}`, so feed markup showed as literal source
-        // text instead of rendering). `cacheKey` is derived here, inside
+        // through plain text interpolation -- Preact escapes `{body}`, so
+        // feed markup would otherwise show as literal source text instead
+        // of rendering. `cacheKey` is derived here, inside
         // this component, rather than plumbed through `ReadingPaneEntry` as
         // a separate `contentHash` field: it is entirely a function of
         // `entry.id` plus the exact string being rendered, so hashing it

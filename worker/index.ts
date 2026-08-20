@@ -2,7 +2,7 @@
  * Worker entrypoint and route table (design.md §1: "/api/* first, else
  * env.ASSETS"; wrangler.toml's `run_worker_first = ["/api/*"]` sends every
  * /api/* request here before any static-asset fallback). `/api/health` is
- * Slice 7's addition, not built yet — an unmatched /api/* path returns its
+ * not built yet — an unmatched /api/* path returns its
  * own 404 rather than falling through to env.ASSETS, so an unimplemented
  * API route never resolves to the app shell's HTML.
  */
@@ -30,7 +30,7 @@ export default {
 
     if (pathname.startsWith("/api/")) {
       if (pathname === "/api/feed" && request.method === "GET") {
-        // Defense-in-depth (Slice 4 correction, finding 1): handleFeedRequest
+        // Defense-in-depth: handleFeedRequest
         // maps every error it anticipates to the JSON taxonomy internally, so
         // this catch should never fire in practice. It exists so a future
         // code path this route table cannot anticipate still returns the

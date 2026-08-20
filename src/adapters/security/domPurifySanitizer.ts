@@ -30,7 +30,7 @@ import type { SanitizerPort } from "../../ports/SanitizerPort";
 const LRU_CAPACITY = 100;
 
 /**
- * Finding 4, Slice 5 correction round: the 100-entry capacity above bounds
+ * The 100-entry capacity above bounds
  * KEY COUNT only, not memory -- one hundred very large sanitized documents
  * is still one hundred very large documents held in memory. These two
  * constants add a size-aware bound on top of it.
@@ -58,11 +58,10 @@ const DOMPURIFY_CONFIG = {
   // DOMPurify's `Config` type declares these as plain mutable `string[]`,
   // so this object is intentionally not `as const` -- a readonly tuple type
   // here does not match its `sanitize()` overload.
-  // `<noscript>` is deliberately NOT listed here (Finding 5, Slice 5
-  // correction round): DOMPurify's default "html" allow-list
-  // (USE_PROFILES: { html: true }) does not include `noscript` among its
-  // allowed tags at all, so any `<noscript>` is already stripped -- and the
-  // classic noscript mXSS parser-context-switch payload (a nested
+  // `<noscript>` is deliberately NOT listed here: DOMPurify's default "html"
+  // allow-list (USE_PROFILES: { html: true }) does not include `noscript`
+  // among its allowed tags at all, so any `<noscript>` is already stripped --
+  // and the classic noscript mXSS parser-context-switch payload (a nested
   // `</noscript>` smuggled inside a `title` attribute) is neutralized as a
   // result, verified empirically in domPurifySanitizer.test.ts and
   // SafeHtml.test.tsx. FORBID_TAGS is reserved for tags the default profile
@@ -100,7 +99,7 @@ function ensureHookInstalled(): void {
 
 /**
  * Small capacity-bounded LRU keyed on `entryId + contentHash` (design.md
- * §5), size-aware on top of the key-count capacity (Finding 4): eviction is
+ * §5), size-aware on top of the key-count capacity: eviction is
  * driven by whichever bound -- key count or total cached bytes -- is hit
  * first.
  */
@@ -153,7 +152,7 @@ export class DomPurifySanitizer implements SanitizerPort {
     const cached = this.cache.get(cacheKey);
     if (cached !== undefined) return cached;
     const clean = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
-    // Finding 4: an oversized single document is sanitized and returned
+    // An oversized single document is sanitized and returned
     // like any other, it just never enters the cache.
     if (byteLength(clean) <= MAX_CACHEABLE_ENTRY_BYTES) {
       this.cache.set(cacheKey, clean);

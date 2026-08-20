@@ -21,7 +21,7 @@ body {
 
 /*
  * Layout strategy (fixed after the "off-screen reading pane" defect: the
- * Slice 10b actions bar was added as a direct child of `.app-shell` with no
+ * actions bar was added as a direct child of `.app-shell` with no
  * grid placement rule, so it silently fell into the implicit grid ahead of
  * the three panes, pushing every pane one slot over and the reading pane
  * below the fold in a narrow column).

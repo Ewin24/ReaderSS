@@ -64,9 +64,9 @@ function extractMediaType(contentType: string | null): string | null {
 }
 
 /**
- * Creates the ONE deadline signal for a whole client request (Slice 4
- * correction, finding 3). Previously `AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)`
- * was created fresh inside the per-hop loop, so a 3-hop redirect chain could
+ * Creates the ONE deadline signal for a whole client request. Previously
+ * `AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)` was created fresh inside the
+ * per-hop loop, so a 3-hop redirect chain could
  * consume up to ~3x the advertised budget while every individual hop stayed
  * "well behaved" under its own fresh timer. Creating this once, before the
  * loop, and reusing the same signal on every hop's `fetch` call bounds total
@@ -107,7 +107,7 @@ export async function handleFeedRequest(request: Request): Promise<Response> {
     if (!guardResult.allowed) {
       const isMalformedRequest =
         guardResult.reason === "unparseable" || guardResult.reason === "unsupported_scheme";
-      // Reports the hop that was ACTUALLY rejected (finding 6) — not a
+      // Reports the hop that was ACTUALLY rejected — not a
       // previously-validated hop's hostname, which would mislead anyone
       // triaging an SSRF attempt on a multi-hop redirect chain.
       return errorResponse(
@@ -157,9 +157,9 @@ export async function handleFeedRequest(request: Request): Promise<Response> {
           );
         }
         redirectCount += 1;
-        // `new URL(location, ...)` throws on a malformed Location (finding 1,
-        // path B) — caught below and mapped to UPSTREAM_ERROR, since a
-        // malformed redirect is the ORIGIN misbehaving, not the caller.
+        // `new URL(location, ...)` throws on a malformed Location — caught
+        // below and mapped to UPSTREAM_ERROR, since a malformed redirect is
+        // the ORIGIN misbehaving, not the caller.
         currentUrl = new URL(location, guardResult.url).toString();
         continue;
       }
@@ -186,9 +186,9 @@ export async function handleFeedRequest(request: Request): Promise<Response> {
         );
       }
 
-      // `readLimitedBody` can also reject with the deadline's TimeoutError
-      // (finding 1, path A): per the WHATWG Fetch spec, aborting a fetch's
-      // controller errors its response body stream too, not just the
+      // `readLimitedBody` can also reject with the deadline's TimeoutError:
+      // per the WHATWG Fetch spec, aborting a fetch's controller errors its
+      // response body stream too, not just the
       // header-wait phase, so a slow-trickling body under the 5 MiB cap can
       // still trip the deadline here rather than at the `fetch()` call.
       const body = await readLimitedBody(upstream, MAX_BODY_BYTES);
@@ -218,14 +218,14 @@ export async function handleFeedRequest(request: Request): Promise<Response> {
       // ANY other thrown error (a network-level fetch rejection, a malformed
       // redirect Location, or anything this route did not anticipate) maps
       // to the generic upstream-failure code rather than escaping as an
-      // unhandled exception — the whole point of this correction round.
+      // unhandled exception — which is exactly what this guard prevents.
       return errorResponse(deploymentOrigin, 502, "UPSTREAM_ERROR", `could not reach ${targetHost}`, targetHost);
     }
   }
 }
 
 /**
- * Defense-in-depth for `worker/index.ts`'s route boundary (finding 1). The
+ * Defense-in-depth for `worker/index.ts`'s route boundary. The
  * per-hop try/catch inside `handleFeedRequest` above is expected to map
  * every error it can encounter to the JSON taxonomy, so this should never
  * fire in practice — it exists so that a future code path added to this

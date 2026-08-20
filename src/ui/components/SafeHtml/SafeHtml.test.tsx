@@ -50,7 +50,7 @@ describe("SafeHtml", () => {
     expect(container.querySelector("iframe")).toBeNull();
   });
 
-  it("renders no element and no onerror attribute from a <noscript> mXSS payload (Finding 5)", () => {
+  it("renders no element and no onerror attribute from a <noscript> mXSS payload", () => {
     const container = renderSafeHtml(
       '<noscript><p title="</noscript><img src=x onerror=window.__pwned = true>">x</noscript>',
     );
@@ -59,7 +59,7 @@ describe("SafeHtml", () => {
     expect((window as unknown as { __pwned?: boolean }).__pwned).toBeUndefined();
   });
 
-  it("never renders a srcset attribute on an image (Finding 5)", () => {
+  it("never renders a srcset attribute on an image", () => {
     const container = renderSafeHtml(
       '<img src="https://example.com/a.png" srcset="https://evil.example/x.png 1x">',
     );
@@ -103,13 +103,13 @@ describe("SafeHtml", () => {
     expect(renderWithoutProvider).toThrow(/SanitizerContext/);
   });
 
-  it("degrades to a local safe fallback instead of throwing when the sanitizer itself throws (Finding 3)", () => {
+  it("degrades to a local safe fallback instead of throwing when the sanitizer itself throws", () => {
     // Distinct from the "no Provider" case above: here a Provider IS
     // present, but the sanitize function it supplies throws. Without a
     // local guard, this propagates out of `SafeHtml` and is caught only by
     // the app-level `ErrorBoundary` -- which blanks the ENTIRE reading pane
-    // for one bad entry, exactly what Slice 3's correction added that
-    // boundary to avoid relying on as the primary recovery path.
+    // for one bad entry, which is exactly why that boundary should not be
+    // relied on as the primary recovery path.
     const throwingSanitize = () => {
       throw new Error("simulated DOMPurify internal failure");
     };

@@ -3,9 +3,9 @@ import { fireEvent, render, screen } from "@testing-library/preact";
 import { useRefreshSignals } from "./useRefreshSignals";
 
 /**
- * Findings 3 & 4, Slice 10b correction round: `App.tsx` used to own three
- * independently-incrementing counters and their bump handlers inline, and
- * combined two of them into `FeedSidebarContainer`'s `refreshSignal` prop
+ * `App.tsx` used to own three independently-incrementing counters and
+ * their bump handlers inline, and combined two of them into
+ * `FeedSidebarContainer`'s `refreshSignal` prop
  * via a bare arithmetic sum (`sidebarRefreshSignal + feedListRefreshSignal`)
  * -- an implicit, undocumented "both are monotonic so summing never
  * collides" invariant. This hook extracts the bookkeeping into one place

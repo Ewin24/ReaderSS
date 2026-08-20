@@ -5,7 +5,7 @@ import type { ReaderSSDatabase } from "./schema";
 /** Highest possible UTF-16 code unit, used as the open upper bound of a string-prefixed key range. */
 const MAX_UNICODE_CHAR = String.fromCharCode(0xffff);
 
-/** Thrown by `putEntry` when the entry would produce an invalid compound-index key (Finding 4). */
+/** Thrown by `putEntry` when the entry would produce an invalid compound-index key. */
 export class InvalidEntryStateError extends Error {
   constructor(message: string) {
     super(message);
@@ -72,9 +72,9 @@ export function createIdbLocalStore(db: ReaderSSDatabase): LocalStorePort {
       await db.put("entries", entry);
     },
     async putFeedWithEntries(feed, entries) {
-      // One shared, explicitly-aborted transaction (Finding 1, Slice 5
-      // correction round) -- mirrors the pattern `deleteFeed` above already
-      // established for a multi-store write. Requests are queued
+      // One shared, explicitly-aborted transaction -- mirrors the pattern
+      // `deleteFeed` above already established for a multi-store write.
+      // Requests are queued
       // synchronously (no `await` between them) so the transaction stays
       // active for the whole batch; on any failure -- including a state
       // guard rejecting one entry partway through -- the transaction is
@@ -110,9 +110,9 @@ export function createIdbLocalStore(db: ReaderSSDatabase): LocalStorePort {
       // Mirrors `putFeedWithEntries`'s own transaction pattern (requests
       // queued synchronously, explicit try/catch/abort), but the FIRST
       // queued request is `feedsStore.add()` rather than `.put()` --
-      // IndexedDB's own atomic, keyed uniqueness check (Finding 2, Slice
-      // 10b correction round). `add()` rejects with `ConstraintError` if a
-      // record with this key already exists, and per the IndexedDB spec an
+      // IndexedDB's own atomic, keyed uniqueness check. `add()` rejects
+      // with `ConstraintError` if a record with this key already exists,
+      // and per the IndexedDB spec an
       // unhandled request error auto-aborts the transaction, so nothing
       // queued here (the `add` itself, or any entry `put`) survives either
       // way -- the same rollback guarantee `putFeedWithEntries` documents.

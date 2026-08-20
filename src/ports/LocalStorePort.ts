@@ -20,7 +20,7 @@ export interface LocalStorePort {
   deleteEntry(id: string): Promise<void>;
   /**
    * Writes a feed and all of its entries atomically, in one IndexedDB
-   * transaction (Finding 1, Slice 5 correction round). `subscribeToFeed`
+   * transaction. `subscribeToFeed`
    * uses this instead of calling `putFeed` + `putEntry` in a loop, so a
    * write failure partway through never leaves the feed persisted with
    * only some of its entries, or entries persisted with no owning feed.
@@ -29,7 +29,7 @@ export interface LocalStorePort {
   /**
    * Atomically creates a feed and its entries ONLY if no feed with this id
    * already exists, resolving `"duplicate"` instead of silently overwriting
-   * when it does (Finding 2, Slice 10b correction round). `subscribeToFeed`
+   * when it does. `subscribeToFeed`
    * uses this for its create path instead of `putFeedWithEntries`: a
    * `getFeed` existence check followed by a separate write is two
    * non-atomic steps, so two same-origin tabs submitting the same feed URL

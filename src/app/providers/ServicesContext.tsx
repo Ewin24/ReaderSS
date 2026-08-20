@@ -3,9 +3,8 @@
  * `ui/containers/**` binds `services/**` (via this context) to
  * `ui/components/**`, never importing `adapters/**` directly -- enforced by
  * `eslint.config.js`'s `import-x/no-restricted-paths` zone for
- * `ui/containers`. Only `toggleRead`/`toggleStar`'s dependencies are carried
- * here for Slice 6; later slices extend `Services` as more containers need
- * more service dependencies.
+ * `ui/containers`. `Services` grows as more containers need more service
+ * dependencies.
  */
 import { createContext, type ComponentChildren } from "preact";
 import { useContext } from "preact/hooks";
@@ -17,14 +16,13 @@ import type { LocalStorePort } from "../../ports/LocalStorePort";
 export interface Services {
   readonly localStore: LocalStorePort;
   readonly clock: ClockPort;
-  /** Added in Slice 10a for the composition root (`buildServices.ts`); the
-   * first real production callers are Slice 10b's add-feed and refresh
-   * containers. */
+  /** Added for the composition root (`buildServices.ts`); the first real
+   * production callers are the add-feed and refresh containers. */
   readonly feedSource: FeedSourcePort;
   /**
-   * Added in Slice 10b. Root-cause fix: `buildServices()` previously wired
-   * only `localStore`/`clock`/`feedSource`, so nothing in the app's real
-   * import graph reached `adapters/feed/feedParser.ts` -- confirmed
+   * `buildServices()` previously wired only `localStore`/`clock`/
+   * `feedSource`, so nothing in the app's real import graph reached
+   * `adapters/feed/feedParser.ts` -- confirmed
    * empirically by grepping the built bundle, which contained DOMPurify and
    * `idb` but zero feed-parsing code. `subscribeToFeed`/`refreshFeeds` both
    * require a `FeedParserPort`, which is why every service that ingests a

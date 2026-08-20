@@ -49,7 +49,7 @@ export function createEntry(input: CreateEntryInput): Entry {
     hasFullContent: input.hasFullContent ?? 0,
     // A freshly created entry has never been changed by a user action, so
     // both change timestamps start null — they are stamped only by
-    // services/toggleRead.ts and services/toggleStar.ts (Slice 6), never here.
+    // services/toggleRead.ts and services/toggleStar.ts, never here.
     read: 0,
     readChangedAt: null,
     starred: 0,

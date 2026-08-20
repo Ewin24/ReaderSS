@@ -61,16 +61,16 @@ afterEach(() => {
 });
 
 /**
- * Finding 1 (Slice 10a correction round, BLOCKER): `main.tsx` awaited
- * `buildServices()` -- which opens IndexedDB -- before the first `render()`,
- * with no `.catch()` anywhere and no `unhandledrejection` handler in
- * `src/**`. If `openReaderSSDatabase()` rejects (Slice 2's own
- * `DatabaseBlockedError`/timeout; Safari private browsing reaches the same
- * place), `render()` is never reached, `<ErrorBoundary>` never mounts (it
- * only catches errors during rendering, not a rejection before the tree
- * exists), and the user gets a permanently blank page. `bootstrapApp` closes
- * this: it never lets the rejection escape uncaught, and the failure branch
- * renders a visible, actionable fallback directly into the root element.
+ * `main.tsx` used to await `buildServices()` -- which opens IndexedDB --
+ * before the first `render()`, with no `.catch()` anywhere and no
+ * `unhandledrejection` handler in `src/**`. If `openReaderSSDatabase()`
+ * rejects (its own `DatabaseBlockedError`/timeout; Safari private browsing
+ * reaches the same place), `render()` is never reached, `<ErrorBoundary>`
+ * never mounts (it only catches errors during rendering, not a rejection
+ * before the tree exists), and the user gets a permanently blank page.
+ * `bootstrapApp` closes this: it never lets the rejection escape uncaught,
+ * and the failure branch renders a visible, actionable fallback directly
+ * into the root element.
  */
 describe("bootstrapApp", () => {
   it("renders the app tree into the root element when buildServices resolves", async () => {

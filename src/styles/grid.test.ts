@@ -32,7 +32,7 @@ describe("grid.css breakpoint consistency", () => {
 
 /**
  * Guard against the "off-screen reading pane" defect found by real use: the
- * Slice 10b actions bar (`.app-shell__actions`) was added as a direct child
+ * actions bar (`.app-shell__actions`) was added as a direct child
  * of `.app-shell` with no grid placement rule of its own. With no rule, it
  * silently fell into the implicit grid ahead of the three panes at the
  * desktop breakpoint, pushing every pane one column to the right and the
@@ -62,7 +62,7 @@ describe("grid.css breakpoint consistency", () => {
  *   JSX rather than reading CSS text, which was judged too fragile for a
  *   test whose whole point is to be a simple, trustworthy backstop.
  *   Adding a new non-pane child to `App.tsx` (an offline banner, an update
- *   prompt, a first-run setup screen -- all planned for later slices)
+ *   prompt, a first-run setup screen -- all anticipated future additions)
  *   WILL NOT be caught by this test unless that child's class is also
  *   added to this list. Whoever adds such a child MUST update grid.css's
  *   grid-template-areas (both breakpoints), give the new class its own

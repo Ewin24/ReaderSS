@@ -3,12 +3,12 @@ import { fireEvent, render, screen } from "@testing-library/preact";
 import { AddFeedForm, type AddFeedFormStatus } from "./AddFeedForm";
 
 /**
- * Presentational only: a URL input, a submit callback, and a `status` prop
- * (task 10.12). The six `subscribeToFeed` outcomes (feed-subscriptions spec)
- * MUST each render a textually distinct, actionable message -- this project
- * has spent multiple review rounds refusing to collapse specific failures
- * into one shared fallback string, so `unreachable` and `not-a-feed` (two
- * completely different problems for the user) must read differently.
+ * Presentational only: a URL input, a submit callback, and a `status` prop.
+ * The six `subscribeToFeed` outcomes (feed-subscriptions spec) MUST each
+ * render a textually distinct, actionable message -- collapsing specific
+ * failures into one shared fallback string is a real regression risk, so
+ * `unreachable` and `not-a-feed` (two completely different problems for the
+ * user) must read differently.
  */
 describe("AddFeedForm", () => {
   it("renders a URL input and a submit button", () => {

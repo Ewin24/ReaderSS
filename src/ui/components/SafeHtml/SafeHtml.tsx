@@ -18,9 +18,9 @@ export interface SafeHtmlProps {
  * to render at all (`useSanitizer` throws) if no sanitizer was provided,
  * rather than falling back to an unsanitized render.
  *
- * Finding 3, Slice 5 correction round: `sanitize()` itself is also guarded
- * locally. The app-level `ErrorBoundary` (Slice 3's correction) is a distant
- * last resort, not the intended recovery path for one bad entry -- relying
+ * The call to `sanitize()` itself is also guarded locally. The app-level
+ * `ErrorBoundary` is a distant last resort, not the intended recovery path
+ * for one bad entry -- relying
  * on it alone means a single throw from DOMPurify blanks the entire reading
  * pane instead of just that one entry. On an unexpected throw here, this
  * component degrades to a local, visibly-marked fallback and renders no

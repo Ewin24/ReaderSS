@@ -1,13 +1,11 @@
 /**
  * Bookkeeping for the "something changed, re-fetch" signals `App.tsx` hands
- * to its child containers (Findings 3 & 4, Slice 10b correction round).
- * Previously three `useState` counters and three inline bump handlers lived
- * directly in `App.tsx`, which was flagged in the Slice 10a correction round
- * as a file already too close to reviewer-cognitive-load limits, then grew
- * by two more signals and three more handlers in Slice 10b anyway -- the
- * exact surface a missed wiring call site produced Slice 10a's CRITICAL.
- * Extracted here, focused on ONLY this bookkeeping (not a wholesale
- * `App.tsx` restructuring).
+ * to its child containers. Previously three `useState` counters and three
+ * inline bump handlers lived directly in `App.tsx`, which was already too
+ * close to reviewer-cognitive-load limits, then grew by two more signals
+ * and three more handlers anyway -- the exact surface a missed wiring call
+ * site produced a critical bug on before. Extracted here, focused on ONLY
+ * this bookkeeping (not a wholesale `App.tsx` restructuring).
  *
  * Each version counter tracks a DIFFERENT reason a container needs to
  * re-fetch, bumped from a different call site:
@@ -29,7 +27,7 @@
  * (`feedListRefreshSignal + sidebarRefreshSignal`), whose only real
  * correctness argument -- both counters are strictly monotonic, so their
  * sum can never coincidentally repeat across a genuine change -- was
- * implicit and undocumented (Finding 4). `feedSidebarSignal` below exposes
+ * implicit and undocumented. `feedSidebarSignal` below exposes
  * both versions as an explicit two-element tuple instead, so a consumer's
  * effect can depend on both values directly and a future third trigger has
  * an unambiguous place to plug into, instead of a fourth counter someone

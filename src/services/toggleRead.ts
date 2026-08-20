@@ -2,19 +2,19 @@
  * The ONLY writer of `Entry.read` / `Entry.readChangedAt` in the whole
  * codebase (design.md §4's pseudocode; Amendment C, entry-reading spec
  * "Read state"). `readChangedAt` records the moment the field last
- * *changed*, not when it became true -- Slice 9's merge (`resolveField`)
+ * *changed*, not when it became true -- the merge (`resolveField`)
  * resolves conflicts by last-write-wins on this timestamp, so a value
  * forged by any other code path (refresh, merge, initial load) would make a
  * mathematically correct resolver still produce the wrong answer.
  *
  * A thin, named, field-specific wrapper around the shared
- * `toggleEntryField` algorithm (Finding 6, Slice 6 correction round) --
- * see that module's doc comment for the full write-path rationale, which
+ * `toggleEntryField` algorithm -- see that module's doc comment for the
+ * full write-path rationale, which
  * applies here unchanged:
  *   1. `readChangedAt` is stamped on BOTH directions, 0->1 and 1->0.
  *   2. A no-op (setting the value it already has) does NOT advance the
  *      timestamp -- otherwise idle UI churn could beat a genuine remote
- *      change in the Slice 9 merge.
+ *      change in the merge.
  *   3. Refresh, merge, and initial load never call this function, so they
  *      can never forge a change timestamp. This file's tests can only prove
  *      the "loading state alone never stamps" half of that claim (nothing

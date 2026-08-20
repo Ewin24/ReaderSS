@@ -14,11 +14,11 @@ const baseEntry = {
 };
 
 /**
- * Slice 10a wires the pane's body through `SafeHtml` (design.md §5), so
- * `useSanitizer()` now throws unless a `SanitizerContext.Provider` is an
+ * The pane's body routes through `SafeHtml` (design.md §5), so
+ * `useSanitizer()` throws unless a `SanitizerContext.Provider` is an
  * ancestor. This test file is not re-testing sanitization correctness --
  * that is `SafeHtml.test.tsx`'s job, with the real `DomPurifySanitizer` and
- * its enumerated adversarial payload list -- so an identity function is
+ * its enumerated malicious payload list -- so an identity function is
  * enough here to prove `ReadingPane` actually routes content through
  * `SafeHtml` rather than plain text interpolation.
  */
@@ -105,7 +105,7 @@ describe("ReadingPane", () => {
     expect(onBack).toHaveBeenCalled();
   });
 
-  describe("HTML rendering via the SafeHtml choke point (Slice 10a)", () => {
+  describe("HTML rendering via the SafeHtml choke point", () => {
     it("renders HTML content as markup, not as an escaped literal string", () => {
       renderReadingPane({
         entry: { ...baseEntry, summary: null, content: "<strong>bold</strong> claim" },

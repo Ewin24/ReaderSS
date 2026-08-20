@@ -6,9 +6,9 @@ import type { LocalStorePort } from "../ports/LocalStorePort";
 import { toggleRead } from "./toggleRead";
 
 // The full write-path matrix (0->1, 1->0, no-op, not-found, and the
-// Finding-3 error-surfacing cases) is written ONCE, against the shared
+// error-surfacing cases) is written ONCE, against the shared
 // `toggleEntryField` helper, and instantiated for both `read` and `starred`
-// in `toggleEntryField.test.ts` (Finding 6, Slice 6 correction round). This
+// in `toggleEntryField.test.ts`. This
 // file keeps only the thin tests that are specific to `toggleRead`: that it
 // binds the `read`/`readChangedAt` field pair (not `starred`), and the
 // write-path-rule-3 documentation case that predates `refreshFeeds`.

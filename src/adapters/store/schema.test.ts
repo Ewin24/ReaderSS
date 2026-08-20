@@ -134,7 +134,7 @@ describe("openReaderSSDatabase — destructive-reset escape hatch", () => {
   });
 });
 
-describe("openReaderSSDatabase — narrowed destructive-reset catch (Finding 1)", () => {
+describe("openReaderSSDatabase — narrowed destructive-reset catch", () => {
   beforeEach(() => {
     vi.mocked(deleteDB).mockClear();
   });
@@ -153,7 +153,7 @@ describe("openReaderSSDatabase — narrowed destructive-reset catch (Finding 1)"
   // driven by a real VersionError from a real newer on-disk version.
 });
 
-describe("openReaderSSDatabase — blocked-open handling (Finding 3)", () => {
+describe("openReaderSSDatabase — blocked-open handling", () => {
   it("closes this connection and notifies the caller when it blocks a newer version opening elsewhere (e.g. another tab)", async () => {
     const onBlocking = vi.fn();
     openDb = await openReaderSSDatabase({ onBlocking });

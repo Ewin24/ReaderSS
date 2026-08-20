@@ -6,21 +6,16 @@
  * intermediate state of its own, so there is exactly one write path from a
  * click to a stamped entry.
  *
- * Finding 3 (Slice 6 correction round): a failed write is reported through
- * `onToggleError`, never left as a silent no-op. `toggleRead`/`toggleStar`
- * already catch their own store failures and resolve to a `status: "error"`
- * result instead of rejecting, but `handleResult` below still branches on a
- * rejected promise too, so a genuinely unexpected throw elsewhere in the
- * chain is not silently swallowed either.
+ * A failed write is reported through `onToggleError`, never left as a
+ * silent no-op. `toggleRead`/`toggleStar` already catch their own store
+ * failures and resolve to a `status: "error"` result instead of rejecting,
+ * but `handleResult` below still branches on a rejected promise too, so a
+ * genuinely unexpected throw elsewhere in the chain is not silently
+ * swallowed either.
  *
- * NOT YET MOUNTED into `App.tsx`/`main.tsx` (Finding 5, Slice 6 correction
- * round). This is deliberate, not an oversight: there is no composition
- * root wiring a real, persisted feed list into the app yet, and no "add a
- * feed" UI anywhere in the plan to populate one -- mounting this container
- * against `App.tsx`'s current fixture data would render toggle buttons that
- * silently no-op. Slice 10 (composition root + add-feed UI) is where this
- * container gets mounted; this file and its test are proof the wiring
- * already works end-to-end against the real services, ahead of that slice.
+ * This container is mounted into `App.tsx` via the composition root
+ * (`buildServices.ts`); this file and its test are also proof the wiring
+ * works end-to-end against the real services.
  */
 import { useCallback } from "preact/hooks";
 import { useServices } from "../../app/providers/ServicesContext";

@@ -22,12 +22,11 @@ export default tseslint.config(
     },
     rules: {
       // The single enforced DOMPurify choke point (design.md §5, layer 1 of
-      // 3). Sink list extended in the Slice 5 correction round (Finding 6:
-      // document.write/parseFromString/createContextualFragment/
-      // setHTMLUnsafe/srcdoc; Finding 7: the computed bracket-access form
-      // of every property-name sink below, e.g. `el["innerHTML"]`). A
-      // computed key built from string concatenation, e.g.
-      // `el["inner" + "HTML"]`, is a KNOWN, DELIBERATE, UNCOVERED gap: its
+      // 3). The sink list also covers document.write/parseFromString/
+      // createContextualFragment/setHTMLUnsafe/srcdoc, and the computed
+      // bracket-access form of every property-name sink below, e.g.
+      // `el["innerHTML"]`. A computed key built from string concatenation,
+      // e.g. `el["inner" + "HTML"]`, is a KNOWN, DELIBERATE, UNCOVERED gap: its
       // AST property node is a BinaryExpression, not a Literal, so no
       // selector matching a literal `property.value` can express it. See
       // src/adapters/security/rawHtmlSinkGuard.test.ts's module doc comment
@@ -72,7 +71,7 @@ export default tseslint.config(
         },
         {
           // Computed bracket access with a literal string key, e.g.
-          // `el["innerHTML"]` (Finding 7's covered half of the blind spot).
+          // `el["innerHTML"]` (the covered half of the blind spot).
           selector:
             'MemberExpression[computed=true][property.type="Literal"][property.value=/^(innerHTML|outerHTML|insertAdjacentHTML|srcdoc)$/]',
           message: SAFE_HTML_MESSAGE,
@@ -168,20 +167,20 @@ export default tseslint.config(
     // The single file-level override for the choke point itself
     // (design.md §5, enforcement layer 1 of 3). Scoped to the exact file,
     // not a broader glob, and not a per-line eslint-disable comment (which
-    // the Slice 5 guard test explicitly rejects if it names this rule).
+    // the guard test explicitly rejects if it names this rule).
     files: ["src/ui/components/SafeHtml/SafeHtml.tsx"],
     rules: {
       "no-restricted-syntax": "off",
     },
   },
   {
-    // Finding 9, Slice 5 correction round: this override was previously
-    // repo-wide (`**/*.test.ts(x)`), silently exempting every current and
-    // future slice's tests from the layer-zone rule for one test's need.
-    // Scoped down to the exact two files that were empirically confirmed
-    // (by temporarily removing the override and running `npm run lint`) to
-    // need it, mirroring the narrower file-scoped override already used a
-    // few lines above for SafeHtml.tsx itself:
+    // This override was previously repo-wide (`**/*.test.ts(x)`), silently
+    // exempting every current and future test file from the layer-zone rule
+    // for one test's need. Scoped down to the exact two files that were
+    // empirically confirmed (by temporarily removing the override and
+    // running `npm run lint`) to need it, mirroring the narrower
+    // file-scoped override already used a few lines above for
+    // SafeHtml.tsx itself:
     //   - SafeHtml.test.tsx (ui/components/** importing adapters/security/**
     //     directly) renders through the REAL DomPurifySanitizer instead of a
     //     mock, per design.md §7's "assert the resulting DOM, not the
@@ -192,7 +191,7 @@ export default tseslint.config(
     // Test files are not shipped production code and never enter the
     // runtime import graph the layer-zone rule protects, so this relaxation
     // is legitimate -- but it must be named per-file, not granted to every
-    // test in the repo, so a fifth slice's test cannot silently inherit an
+    // test in the repo, so a future test cannot silently inherit an
     // exemption it never needed and never asked for. The raw-HTML-sink and
     // dompurify-import bans still apply to these two files unchanged --
     // only the layer-zone import-path rule is relaxed here.

@@ -11,17 +11,17 @@
  * whatever the user did to it survives untouched, even when the entry's
  * content changed. See `preserveLocalState` below.
  *
- * Two non-fatal-failure rules added in the Slice 6 correction round:
+ * Two non-fatal-failure rules:
  *   1. `preserveLocalState` is applied against a state re-read immediately
  *      before the write, not the `existingEntries` snapshot taken before the
  *      fetch/parse `await`s -- otherwise a toggle landing in that window is
- *      silently reverted (Finding 1). See the re-read inside the merge loop
+ *      silently reverted. See the re-read inside the merge loop
  *      in `refreshOneFeed` below.
  *   2. A retention-prune failure never downgrades an otherwise successful
- *      refresh to `status: "failed"` (Finding 2) -- the feed's content was
+ *      refresh to `status: "failed"` -- the feed's content was
  *      already fetched, parsed, and committed by the time pruning runs, and
  *      reporting that as a failure would be exactly the dishonesty this
- *      slice exists to prevent, just inverted.
+ *      rule exists to prevent, just inverted.
  */
 import { detectsUnstableGuid } from "../domain/identity/entryIdentity";
 import type { Entry } from "../domain/models/Entry";
@@ -53,9 +53,8 @@ export interface FeedRefreshOutcome {
   readonly errorMessage?: string;
   /**
    * Number of retention-prune deletions that failed after an otherwise
-   * successful refresh (Finding 2, Slice 6 correction round). A pruning
-   * failure is a distinct, non-fatal signal -- it must never downgrade
-   * `status` to `"failed"`, since the feed's content was fetched, parsed,
+   * successful refresh. A pruning failure is a distinct, non-fatal signal --
+   * it must never downgrade `status` to `"failed"`, since the feed's content was fetched, parsed,
    * and stored successfully. Present only when at least one prune failed.
    */
   readonly pruneFailedCount?: number;
@@ -160,9 +159,8 @@ async function refreshOneFeed(deps: RefreshFeedsDeps, feed: Feed): Promise<FeedR
       // updatedAt and burning IDB transactions on every poll.
       continue;
     }
-    // Finding 1 (Slice 6 correction round): re-read the entry's CURRENT
-    // state immediately before merging, instead of trusting the
-    // `existingEntries` snapshot taken before the network fetch/parse
+    // Re-read the entry's CURRENT state immediately before merging, instead
+    // of trusting the `existingEntries` snapshot taken before the network fetch/parse
     // `await`s above. A `toggleRead`/`toggleStar` write can land in that
     // window; merging against the stale snapshot would silently revert it
     // the moment this refresh also happens to change the entry's content.
@@ -188,7 +186,7 @@ async function refreshOneFeed(deps: RefreshFeedsDeps, feed: Feed): Promise<FeedR
 
   await deps.localStore.putFeedWithEntries(updatedFeed, entriesToWrite);
 
-  // Retention (design.md §3), deferred from Slice 5's subscribeToFeed to
+  // Retention (design.md §3), deferred from subscribeToFeed to
   // here: runs after every successful refresh, over the feed's full
   // post-refresh entry set. `quotaUsageRatio` is left at its default (0),
   // i.e. tier 4's quota-tightened cap (prunePolicy.ts) is implemented but
@@ -200,8 +198,8 @@ async function refreshOneFeed(deps: RefreshFeedsDeps, feed: Feed): Promise<FeedR
     deps.retentionPolicy ?? DEFAULT_RETENTION_POLICY,
     new Date(now),
   );
-  // Finding 2 (Slice 6 correction round): the feed's content was already
-  // fetched, parsed, and committed above by the time pruning runs. A prune
+  // The feed's content was already fetched, parsed, and committed above by
+  // the time pruning runs. A prune
   // failure here is a distinct, non-fatal problem -- it must never surface
   // as a failed refresh (that would tell the user their successfully
   // refreshed feed failed). Every prunable id is still attempted; one

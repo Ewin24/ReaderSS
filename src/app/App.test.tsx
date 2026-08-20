@@ -14,7 +14,7 @@ import { SanitizerContext, type SanitizeFn } from "../ui/components/SafeHtml";
 // `App` assumes a `SanitizerContext.Provider` ancestor -- `main.tsx` supplies
 // the real one (design.md §5); these tests are not re-testing sanitization
 // correctness (`SafeHtml.test.tsx` already does, with the real
-// `DomPurifySanitizer` and its adversarial payload list), so an identity
+// `DomPurifySanitizer` and its malicious payload list), so an identity
 // function is enough to prove `App`'s own wiring reaches `ReadingPane`.
 const identitySanitize: SanitizeFn = (html) => html;
 
@@ -53,8 +53,8 @@ const feedSource: FeedSourcePort = { fetchFeed: vi.fn() };
 const feedParser: FeedParserPort = { parse: vi.fn() };
 
 /**
- * `App` now always renders through `EntryListContainer`/`ReadingPaneContainer`
- * (Slice 10a), which bind to real `toggleRead`/`toggleStar` via
+ * `App` now always renders through `EntryListContainer`/`ReadingPaneContainer`,
+ * which bind to real `toggleRead`/`toggleStar` via
  * `ServicesContext` regardless of whether `feeds`/`entries` were supplied as
  * a test override. Every test below therefore needs a `ServicesProvider`
  * ancestor -- this fake store is built from the SAME `feeds`/`entries`
@@ -267,7 +267,7 @@ describe("App", () => {
     });
   });
 
-  describe("loading real data via services, no override props (Slice 10a)", () => {
+  describe("loading real data via services, no override props", () => {
     it("loads feeds and entries from services.localStore, mounts EntryListContainer/ReadingPaneContainer, and routes a toggle click to putEntry", async () => {
       stubMatchMedia(true);
       const feed = toDomainFeed({ id: "feed-1", title: "Hacker News", folder: null });
@@ -382,7 +382,7 @@ describe("App", () => {
       expect(screen.queryByText(/add a feed to see its entries/i)).not.toBeInTheDocument();
     });
 
-    it("updates the sidebar's unread badge after marking an entry read (Finding 2, Slice 10a correction round)", async () => {
+    it("updates the sidebar's unread badge after marking an entry read", async () => {
       stubMatchMedia(true);
       const feed = toDomainFeed({ id: "feed-1", title: "Hacker News", folder: null });
       let currentEntry = toDomainEntry({
@@ -440,7 +440,7 @@ describe("App", () => {
       );
     });
 
-    it("keeps an entry unread after an explicit 'mark as unread' click -- no silent auto-revert (Finding 1, Slice 10b correction round)", async () => {
+    it("keeps an entry unread after an explicit 'mark as unread' click -- no silent auto-revert", async () => {
       stubMatchMedia(true);
       const feed = toDomainFeed({ id: "feed-1", title: "Hacker News", folder: null });
       // Starts READ, not unread: opening it must not itself write anything,
@@ -530,7 +530,7 @@ describe("App", () => {
    * `makeLocalStore` helper, since these flows genuinely change which feeds
    * and entries exist.
    */
-  describe("add-feed, refresh, and remove-feed mounted in App (Unit 10b)", () => {
+  describe("add-feed, refresh, and remove-feed mounted in App", () => {
     function makeStatefulLocalStore(): LocalStorePort {
       let feedsState: Feed[] = [];
       let entriesState: Entry[] = [];
