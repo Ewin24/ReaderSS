@@ -23,6 +23,7 @@ import { setupServer } from "msw/node";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { buildServices } from "../composition/buildServices";
 import { ServicesProvider } from "../providers/ServicesContext";
+import { SettingsProvider } from "../providers/SettingsProvider";
 import { SanitizerContext } from "../../ui/components/SafeHtml";
 import { App } from "../App";
 
@@ -65,9 +66,11 @@ async function renderRealApp() {
   const { services, sanitize } = await buildServices();
   return render(
     <ServicesProvider services={services}>
-      <SanitizerContext.Provider value={sanitize}>
-        <App />
-      </SanitizerContext.Provider>
+      <SettingsProvider>
+        <SanitizerContext.Provider value={sanitize}>
+          <App />
+        </SanitizerContext.Provider>
+      </SettingsProvider>
     </ServicesProvider>,
   );
 }
