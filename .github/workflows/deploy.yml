@@ -1,0 +1,80 @@
+name: Deploy
+
+# Deploys the app and its feed relay to Cloudflare Workers as a single
+# deployment (see wrangler.toml: the built client is served as static assets,
+# and /api/* is handled by the Worker).
+#
+# Pull requests run the same quality gate but never deploy — only pushes to
+# the default branch publish.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  # A newer push supersedes an in-flight deploy of the same branch. Never
+  # cancel a run that is already deploying to production, though — a
+  # half-applied deploy is worse than a queued one.
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test with coverage
+        # The coverage threshold is enforced in vite.config.ts, so this fails
+        # the build if coverage regresses below it.
+        run: npm run test:coverage
+
+  deploy:
+    name: Deploy to Cloudflare
+    needs: verify
+    # Only publish from the default branch. A green PR does not deploy.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        # Produces dist/client (static assets) and dist/readerss (the Worker
+        # plus its generated wrangler.json, which wrangler auto-detects).
+        run: npm run build
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

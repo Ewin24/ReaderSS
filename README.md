@@ -60,6 +60,27 @@ uses the Vite-generated deploy configuration — no extra flags needed. See
 `DEPLOYMENT.md` for one-time dashboard steps (e.g. rate limiting) that are
 not part of the application code.
 
+### Automatic deploys
+
+`.github/workflows/deploy.yml` publishes on every push to the default branch,
+after lint, typecheck, and the test suite pass. Pull requests run the same
+checks but never deploy.
+
+It requires two repository secrets, both created once:
+
+| Secret | Where it comes from |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare dashboard → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → Account ID (right-hand column) |
+
+Add them under **Settings → Secrets and variables → Actions** in the GitHub
+repository. Scope the API token to the single account that hosts this Worker;
+it does not need Zone or DNS permissions unless a custom domain is added
+later.
+
+The workflow triggers on `main` and `master`, since this repository's local
+history uses `master` while GitHub creates new repositories with `main`.
+
 ## Test
 
 ```bash
