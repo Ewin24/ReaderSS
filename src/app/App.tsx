@@ -36,6 +36,7 @@ import { useSanitizer } from "../ui/components/SafeHtml";
 import type { AppEntry, AppFeed } from "./types";
 import "../styles/grid.css";
 import "../styles/visual.css";
+import "../styles/ui.css";
 
 export interface AppProps {
   /** Test-only override: when supplied, `App` renders exactly this data
