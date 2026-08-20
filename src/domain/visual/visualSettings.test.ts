@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_VISUAL_SETTINGS,
   VISUAL_SETTINGS_CONFIG_KEY,
+  VISUAL_THEME_LABELS,
+  VISUAL_THEME_OPTIONS,
   normalizeVisualSettings,
 } from "./visualSettings";
 
@@ -12,7 +14,23 @@ describe("DEFAULT_VISUAL_SETTINGS", () => {
       fontFamily: "system",
       fontSize: "base",
       navMode: "auto",
+      visualTheme: "flat",
     });
+  });
+});
+
+describe("VISUAL_THEME_OPTIONS and VISUAL_THEME_LABELS", () => {
+  it("offers the flat/classic/clean design themes in order", () => {
+    expect(VISUAL_THEME_OPTIONS).toEqual(["flat", "classic", "clean"]);
+  });
+
+  it("labels every design theme for the settings UI", () => {
+    for (const option of VISUAL_THEME_OPTIONS) {
+      expect(VISUAL_THEME_LABELS[option]).toBeTruthy();
+    }
+    expect(VISUAL_THEME_LABELS.flat).toBe("Flat");
+    expect(VISUAL_THEME_LABELS.classic).toBe("Classic");
+    expect(VISUAL_THEME_LABELS.clean).toBe("Clean");
   });
 });
 
@@ -29,6 +47,7 @@ describe("normalizeVisualSettings", () => {
       fontFamily: "serif",
       fontSize: "lg",
       navMode: "paginated",
+      visualTheme: "classic",
     };
     expect(normalizeVisualSettings(settings)).toEqual(settings);
   });
@@ -53,7 +72,30 @@ describe("normalizeVisualSettings", () => {
       fontFamily: "system",
       fontSize: "base",
       navMode: "auto",
+      visualTheme: "flat",
     });
+  });
+
+  it("falls back an invalid visualTheme to 'flat' while valid siblings survive", () => {
+    const settings = normalizeVisualSettings({
+      theme: "dark",
+      fontFamily: "serif",
+      fontSize: "lg",
+      navMode: "paginated",
+      visualTheme: "neon",
+    });
+    expect(settings).toEqual({
+      theme: "dark",
+      fontFamily: "serif",
+      fontSize: "lg",
+      navMode: "paginated",
+      visualTheme: "flat",
+    });
+  });
+
+  it("keeps a valid non-default visualTheme", () => {
+    const settings = normalizeVisualSettings({ visualTheme: "clean" });
+    expect(settings.visualTheme).toBe("clean");
   });
 
   it("falls back each invalid field individually while valid siblings survive", () => {
@@ -62,12 +104,14 @@ describe("normalizeVisualSettings", () => {
       fontFamily: "system",
       fontSize: "lg",
       navMode: "scroll",
+      visualTheme: "flat",
     });
     expect(settings).toEqual({
       theme: "auto",
       fontFamily: "system",
       fontSize: "lg",
       navMode: "auto",
+      visualTheme: "flat",
     });
   });
 

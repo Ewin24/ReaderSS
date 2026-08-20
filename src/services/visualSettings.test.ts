@@ -33,6 +33,7 @@ const fullSettings: VisualSettings = {
   fontFamily: "serif",
   fontSize: "lg",
   navMode: "paginated",
+  visualTheme: "classic",
 };
 
 describe("loadVisualSettings", () => {
@@ -69,6 +70,7 @@ describe("loadVisualSettings", () => {
       fontFamily: "system",
       fontSize: "base",
       navMode: "auto",
+      visualTheme: "flat",
     });
   });
 

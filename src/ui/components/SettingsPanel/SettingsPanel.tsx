@@ -11,6 +11,8 @@ import {
   FONT_SIZE_OPTIONS,
   NAV_MODE_OPTIONS,
   THEME_OPTIONS,
+  VISUAL_THEME_LABELS,
+  VISUAL_THEME_OPTIONS,
 } from "../../../domain/visual/visualSettings";
 
 export interface SettingsPanelProps {
@@ -118,6 +120,15 @@ export function SettingsPanel({ settings, onUpdateSettings }: SettingsPanelProps
         options={optionList(NAV_MODE_OPTIONS, NAV_LABELS)}
         current={settings.navMode}
         onChange={(value) => onUpdateSettings({ navMode: value as VisualSettings["navMode"] })}
+      />
+      <ControlGroup
+        legend="Design"
+        name="design-theme"
+        options={optionList(VISUAL_THEME_OPTIONS, VISUAL_THEME_LABELS)}
+        current={settings.visualTheme}
+        onChange={(value) =>
+          onUpdateSettings({ visualTheme: value as VisualSettings["visualTheme"] })
+        }
       />
     </section>
   );

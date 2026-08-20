@@ -22,6 +22,8 @@ export function resolveTheme(theme: VisualSettings["theme"], prefersDark: boolea
 /** Default token values that need no explicit attribute (the CSS base already applies them). */
 const DEFAULT_FONT_FAMILY = "system";
 const DEFAULT_FONT_SIZE = "base";
+/** `flat` is the base design theme; its token block lives in `:root` and needs no attribute. */
+const DEFAULT_VISUAL_THEME = "flat";
 
 function setOrRemove(root: HTMLElement, key: string, value: string | undefined): void {
   if (value === undefined) {
@@ -46,4 +48,9 @@ export function applyVisualSettings(
   root.dataset.theme = resolved;
   setOrRemove(root, "font", settings.fontFamily === DEFAULT_FONT_FAMILY ? undefined : settings.fontFamily);
   setOrRemove(root, "fontSize", settings.fontSize === DEFAULT_FONT_SIZE ? undefined : settings.fontSize);
+  setOrRemove(
+    root,
+    "visual",
+    settings.visualTheme === DEFAULT_VISUAL_THEME ? undefined : settings.visualTheme,
+  );
 }

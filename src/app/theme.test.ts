@@ -30,6 +30,7 @@ describe("applyVisualSettings", () => {
     fontFamily: "serif",
     fontSize: "lg",
     navMode: "paginated",
+    visualTheme: "classic",
   };
 
   it("sets data-theme, data-font and data-font-size attributes from settings", () => {
@@ -41,6 +42,27 @@ describe("applyVisualSettings", () => {
     expect(root.dataset.fontSize).toBe("lg");
     // The emitted attribute is `data-font-size` (the DOM dataset camelCases it).
     expect(root.getAttribute("data-font-size")).toBe("lg");
+  });
+
+  it("writes data-visual only when the design theme is not the default flat, and omits it for flat", () => {
+    const root = fakeRoot();
+    applyVisualSettings(fullSettings, "dark", root);
+    expect(root.dataset.visual).toBe("classic");
+
+    // flat is the base design theme: the attribute must be omitted entirely
+    // (setOrRemove default-omission pattern), so no selector matches the base.
+    applyVisualSettings({ ...fullSettings, visualTheme: "flat" }, "dark", root);
+    expect(root.dataset.visual).toBeUndefined();
+    expect(root.getAttribute("data-visual")).toBeNull();
+  });
+
+  it("removes a stale data-visual attribute when the design theme returns to flat", () => {
+    const root = fakeRoot();
+    applyVisualSettings(fullSettings, "dark", root);
+    expect(root.dataset.visual).toBe("classic");
+
+    applyVisualSettings({ ...fullSettings, theme: "auto", visualTheme: "flat" }, "light", root);
+    expect(root.dataset.visual).toBeUndefined();
   });
 
   it("writes the resolved theme onto the element even when it differs from the stored preference", () => {
