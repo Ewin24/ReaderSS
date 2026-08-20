@@ -76,4 +76,99 @@ describe("EntryList", () => {
     fireEvent.click(screen.getByRole("button", { name: 'Star "Second entry"' }));
     expect(onToggleStar).toHaveBeenCalledWith("entry-2");
   });
+
+  describe("pagination footer and scroll-end", () => {
+    it("fires onScrollEnd when a scroll reaches the viewport end", () => {
+      const onScrollEnd = vi.fn();
+      const { container } = render(
+        <EntryList entries={entries} selectedEntryId={null} onSelectEntry={vi.fn()} onScrollEnd={onScrollEnd} />,
+      );
+
+      const list = container.querySelector("ul.entry-list") as HTMLElement;
+      Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
+      Object.defineProperty(list, "scrollHeight", { value: 100, configurable: true });
+
+      fireEvent.scroll(list, { target: { scrollTop: 50 } });
+      expect(onScrollEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not fire onScrollEnd when the scroll is not at the end", () => {
+      const onScrollEnd = vi.fn();
+      const { container } = render(
+        <EntryList entries={entries} selectedEntryId={null} onSelectEntry={vi.fn()} onScrollEnd={onScrollEnd} />,
+      );
+
+      const list = container.querySelector("ul.entry-list") as HTMLElement;
+      Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
+      Object.defineProperty(list, "scrollHeight", { value: 100, configurable: true });
+
+      fireEvent.scroll(list, { target: { scrollTop: 10 } });
+      expect(onScrollEnd).not.toHaveBeenCalled();
+    });
+
+    it("renders a footer with 'Page X of Y' and disabled prev at page 1", () => {
+      render(
+        <EntryList
+          entries={entries}
+          selectedEntryId={null}
+          onSelectEntry={vi.fn()}
+          page={1}
+          pageCount={3}
+          onPrevPage={vi.fn()}
+          onNextPage={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /previous page/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /next page/i })).toBeEnabled();
+    });
+
+    it("disables next on the last page", () => {
+      render(
+        <EntryList
+          entries={entries}
+          selectedEntryId={null}
+          onSelectEntry={vi.fn()}
+          page={3}
+          pageCount={3}
+          onPrevPage={vi.fn()}
+          onNextPage={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText("Page 3 of 3")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /previous page/i })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /next page/i })).toBeDisabled();
+    });
+
+    it("fires onPrevPage/onNextPage on their buttons", () => {
+      const onPrevPage = vi.fn();
+      const onNextPage = vi.fn();
+      render(
+        <EntryList
+          entries={entries}
+          selectedEntryId={null}
+          onSelectEntry={vi.fn()}
+          page={2}
+          pageCount={3}
+          onPrevPage={onPrevPage}
+          onNextPage={onNextPage}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /previous page/i }));
+      expect(onPrevPage).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(screen.getByRole("button", { name: /next page/i }));
+      expect(onNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it("omits the footer when not paginated (no page/pageCount props)", () => {
+      render(<EntryList entries={entries} selectedEntryId={null} onSelectEntry={vi.fn()} />);
+
+      expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /next page/i })).not.toBeInTheDocument();
+    });
+  });
 });
