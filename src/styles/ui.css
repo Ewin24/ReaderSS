@@ -650,3 +650,67 @@ input {
 .refresh-error-chip__message {
   color: var(--color-text-muted);
 }
+
+/* ---------------------------------------------------------------------------
+ * Design theme specific visual enhancements (Classic & Clean)
+ * ------------------------------------------------------------------------- */
+
+/* CLASSIC (Windows XP / Classic desktop) enhancements */
+html[data-visual="classic"] .app-shell__actions {
+  background: var(--color-bg);
+  border-bottom: 2px solid var(--color-border);
+}
+
+html[data-visual="classic"] .feed-sidebar,
+html[data-visual="classic"] .entry-list,
+html[data-visual="classic"] .reading-pane {
+  border: 2px solid var(--color-border);
+}
+
+html[data-visual="classic"] .feed-sidebar__item,
+html[data-visual="classic"] .entry-list-item__button {
+  border-radius: 2px;
+}
+
+html[data-visual="classic"] .feed-sidebar__item[aria-current="true"],
+html[data-visual="classic"] .entry-list-item--selected .entry-list-item__button {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+html[data-visual="classic"] .app-shell__settings-toggle,
+html[data-visual="classic"] .reading-pane__back,
+html[data-visual="classic"] .entry-list__pagination button,
+html[data-visual="classic"] .reading-pane__pagination button,
+html[data-visual="classic"] .refresh-container__button,
+html[data-visual="classic"] .add-feed-form__submit {
+  border-radius: 2px;
+  border: 1px solid var(--color-border);
+}
+
+/* CLEAN (Scientific / Editorial minimalist) enhancements */
+html[data-visual="clean"] .app-shell__actions {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+html[data-visual="clean"] .feed-sidebar__item,
+html[data-visual="clean"] .entry-list-item__button {
+  border-radius: 6px;
+}
+
+html[data-visual="clean"] .app-shell__settings-toggle,
+html[data-visual="clean"] .reading-pane__back,
+html[data-visual="clean"] .entry-list__pagination button,
+html[data-visual="clean"] .reading-pane__pagination button,
+html[data-visual="clean"] .refresh-container__button,
+html[data-visual="clean"] .add-feed-form__submit,
+html[data-visual="clean"] .add-feed-form__input {
+  border-radius: 6px;
+}
+
+html[data-visual="clean"] .reading-pane__title {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
