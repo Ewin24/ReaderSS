@@ -32,29 +32,63 @@
 }
 
 /*
- * FUTURE DESIGN THEMES (commented skeleton -- do NOT build these now).
+ * DESIGN THEMES (visualTheme):
  *
- * To add a design theme: (1) extend the `visualTheme` union + labels in
- * src/domain/visual/visualSettings.ts, (2) fill in the blocks below, and
- * (3) add a label in SettingsPanel. No change to theme.ts or the config
- * store shape. Each theme overrides the shared token surface only where it
- * differs from `flat`; its dark variant composes with the existing
- * `html[data-theme="dark"]` color-scheme block.
+ * 1. FLAT (Default Base in :root / html[data-theme="dark"]):
+ *    Modern, clean flat design with neutral surfaces and blue accent.
  *
- * html[data-visual="classic"] {
- *   /* classic design tokens (light) *​/
- * }
- * html[data-visual="classic"][data-theme="dark"] {
- *   /* classic design tokens (dark) *​/
- * }
+ * 2. CLASSIC (html[data-visual="classic"]):
+ *    Windows XP / Classic Desktop aesthetic with warm-gray desktop tone (#ece9d8),
+ *    classic navy selection accent (#0a246a), and classic window borders (#7f9db9).
  *
- * html[data-visual="clean"] {
- *   /* clean design tokens (light) *​/
- * }
- * html[data-visual="clean"][data-theme="dark"] {
- *   /* clean design tokens (dark) *​/
- * }
+ * 3. CLEAN (html[data-visual="clean"]):
+ *    High-legibility editorial / scientific aesthetic with warm paper background (#faf9f5),
+ *    refined deep teal accent (#0f766e), and subtle borders (#e4e4e7).
  */
+
+/* ============================================================================
+ * CLASSIC THEME (Windows XP / Classic Desktop aesthetic)
+ * ========================================================================= */
+html[data-visual="classic"] {
+  --color-bg: #ece9d8;
+  --color-surface: #ffffff;
+  --color-text: #000000;
+  --color-text-muted: #555555;
+  --color-accent: #0a246a;
+  --color-border: #7f9db9;
+  --font-family: Tahoma, "Segoe UI", -apple-system, system-ui, sans-serif;
+}
+
+html[data-visual="classic"][data-theme="dark"] {
+  --color-bg: #1e2124;
+  --color-surface: #282b30;
+  --color-text: #f0f0f0;
+  --color-text-muted: #99aab5;
+  --color-accent: #5865f2;
+  --color-border: #42454a;
+}
+
+/* ============================================================================
+ * CLEAN THEME (Scientific / Modern Minimalist / Editorial aesthetic)
+ * ========================================================================= */
+html[data-visual="clean"] {
+  --color-bg: #faf9f5;
+  --color-surface: #ffffff;
+  --color-text: #18181b;
+  --color-text-muted: #71717a;
+  --color-accent: #0f766e;
+  --color-border: #e4e4e7;
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html[data-visual="clean"][data-theme="dark"] {
+  --color-bg: #09090b;
+  --color-surface: #121215;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-accent: #14b8a6;
+  --color-border: #27272a;
+}
 
 html[data-theme="dark"] {
   --color-bg: #111111;
