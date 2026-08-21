@@ -1,35 +1,38 @@
 /*
- * Component styling for the "flat" design theme. This file is the piece that
- * makes the visual-token layer (visual.css) actually visible: every rule here
- * consumes the `--color-*` / `--font-*` / `--font-size-*` tokens instead of
- * hardcoded colors/fonts, so flipping `data-theme` (light/dark) or the
- * `data-font` / `data-font-size` attributes retints and re-types the whole
- * surface at once.
+ * Component styling for the reader front.
  *
- * It pairs with grid.css (pure layout, named grid areas — never modified here)
- * and visual.css (the token definitions). This file carries NO layout: it only
- * styles the component classes listed in the component inventory.
+ * It pairs with grid.css (pure layout, named grid areas) and visual.css
+ * (CSS tokens: --color-*, --font-*, --font-size-*).
  *
- * Only tokens are used as color/font sources — no literal color values live
- * here — so theme switching cannot leave a stale hardcoded color behind.
+ * BASE DESIGN THEME: Raw HTML aesthetic (flat) -- clean, unstyled browser feel,
+ * plain borders, classic blue links, standard buttons, and Times/serif typography.
+ *
+ * THEME SKINS (html[data-visual="classic"] and html[data-visual="clean"]) apply
+ * rich personality layers (Windows XP 3D bevels vs. Clean Editorial Cards).
  */
 
 /* ---------------------------------------------------------------------------
  * Shared building blocks
  * ------------------------------------------------------------------------- */
 
-/* Every pane (sidebar / list / reading) sits on a surface over the app
- * background, with a hairline border separating it from its neighbors. */
+/* Three-pane layout borders and background */
 .feed-sidebar,
 .entry-list,
 .reading-pane {
   background: var(--color-surface);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
 }
 
-/* Buttons are styled as borderless, backgroundless text controls by default;
- * the accent is reserved for primary actions and hover/selected states. */
+.reading-pane {
+  border-right: none;
+  padding: 1rem 1.5rem;
+}
+
+/* Raw HTML default buttons */
 button {
   font-family: inherit;
   font-size: inherit;
@@ -58,7 +61,8 @@ input {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.5rem 1rem;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
@@ -66,11 +70,16 @@ input {
 }
 
 .app-shell__settings-toggle {
-  padding: 0.35rem 0.75rem;
+  padding: 0.25rem 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  color: var(--color-text);
+  border-radius: 0;
+  background: #efefef;
+  color: #000000;
+}
+
+html[data-theme="dark"] .app-shell__settings-toggle {
+  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .app-shell__settings-toggle:hover {
@@ -85,8 +94,6 @@ input {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
-  /* Errors must stay legible in both themes; the accent reads clearly on
-   * both the light and dark surfaces. */
   border-left: 3px solid var(--color-accent);
 }
 
@@ -94,7 +101,7 @@ input {
   background: var(--color-surface);
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border);
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
 }
 
 .empty-state {
@@ -109,7 +116,6 @@ input {
   background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
 }
 
 .app-error__detail {
@@ -117,7 +123,7 @@ input {
 }
 
 /* ---------------------------------------------------------------------------
- * FeedSidebar
+ * FeedSidebar (HTML Crudo Default)
  * ------------------------------------------------------------------------- */
 
 .feed-sidebar {
@@ -135,19 +141,21 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 4px;
-  color: var(--color-text);
+  padding: 0.35rem 0.5rem;
+  border-radius: 0;
+  color: var(--color-accent);
+  text-decoration: underline;
 }
 
 .feed-sidebar__item:hover {
-  background: var(--color-surface);
-  color: var(--color-accent);
+  background: rgba(0, 0, 238, 0.08);
 }
 
 .feed-sidebar__item[aria-current="true"] {
-  background: var(--color-accent);
+  background: var(--color-text);
   color: var(--color-bg);
+  text-decoration: none;
+  font-weight: bold;
 }
 
 .feed-sidebar__item-title {
@@ -171,6 +179,7 @@ input {
   padding: 0.1rem 0.4rem;
   color: var(--color-text-muted);
   font-size: 0.85em;
+  text-decoration: none;
 }
 
 .feed-sidebar__remove:hover {
@@ -183,7 +192,6 @@ input {
   padding: 0.5rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
   color: var(--color-text);
 }
 
@@ -198,19 +206,21 @@ input {
   padding: 0.25rem 0.6rem;
   margin-right: 0.4rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text);
+  border-radius: 0;
+  background: #efefef;
+  color: #000000;
+}
+
+html[data-theme="dark"] .feed-sidebar__confirm-remove-yes,
+html[data-theme="dark"] .feed-sidebar__confirm-remove-cancel {
+  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .feed-sidebar__confirm-remove-yes {
   background: var(--color-accent);
   border-color: var(--color-accent);
   color: var(--color-bg);
-}
-
-.feed-sidebar__confirm-remove-cancel:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
 }
 
 .feed-sidebar__loading,
@@ -225,11 +235,11 @@ input {
 }
 
 /* ---------------------------------------------------------------------------
- * EntryList
+ * EntryList (HTML Crudo Default)
  * ------------------------------------------------------------------------- */
 
 .entry-list {
-  padding: 0.25rem 0;
+  padding: 0;
 }
 
 .entry-list--empty,
@@ -253,24 +263,31 @@ input {
 }
 
 .entry-list-item__button {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
+  border-radius: 0;
 }
 
 .entry-list-item__button:hover {
-  background: var(--color-surface);
-  color: var(--color-accent);
+  background: rgba(0, 0, 238, 0.04);
 }
 
 .entry-list-item--selected .entry-list-item__button {
-  background: var(--color-accent);
+  background: var(--color-text);
   color: var(--color-bg);
 }
 
 .entry-list-item__title {
   display: block;
-  font-weight: 600;
+  font-weight: bold;
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.entry-list-item--selected .entry-list-item__title {
+  color: var(--color-bg);
+  text-decoration: none;
 }
 
 .entry-list-item__meta {
@@ -295,11 +312,11 @@ input {
   right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--color-surface);
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: 0.85em;
 }
 
@@ -328,11 +345,17 @@ input {
 
 .entry-list__pagination button,
 .reading-pane__pagination button {
-  padding: 0.3rem 0.7rem;
+  padding: 0.25rem 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  color: var(--color-text);
+  border-radius: 0;
+  background: #efefef;
+  color: #000000;
+}
+
+html[data-theme="dark"] .entry-list__pagination button,
+html[data-theme="dark"] .reading-pane__pagination button {
+  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .entry-list__pagination button:hover:not(:disabled),
@@ -347,20 +370,21 @@ input {
 }
 
 /* ---------------------------------------------------------------------------
- * ReadingPane
+ * ReadingPane (HTML Crudo Default)
  * ------------------------------------------------------------------------- */
-
-.reading-pane {
-  padding: 1rem;
-}
 
 .reading-pane__back {
   margin-bottom: 0.75rem;
-  padding: 0.3rem 0.7rem;
+  padding: 0.25rem 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  color: var(--color-text);
+  border-radius: 0;
+  background: #efefef;
+  color: #000000;
+}
+
+html[data-theme="dark"] .reading-pane__back {
+  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .reading-pane__back:hover {
@@ -376,11 +400,17 @@ input {
 
 .reading-pane__toggle-read,
 .reading-pane__toggle-star {
-  padding: 0.3rem 0.7rem;
+  padding: 0.25rem 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
+  border-radius: 0;
+  background: #efefef;
+  color: #000000;
+}
+
+html[data-theme="dark"] .reading-pane__toggle-read,
+html[data-theme="dark"] .reading-pane__toggle-star {
+  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .reading-pane__toggle-read:hover,
@@ -401,8 +431,9 @@ input {
 
 .reading-pane__title {
   margin: 0 0 0.25rem;
-  font-size: 1.5em;
-  line-height: 1.2;
+  font-size: 1.6em;
+  font-weight: bold;
+  line-height: 1.25;
   color: var(--color-text);
 }
 
@@ -417,7 +448,6 @@ input {
   padding: 0.5rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
   color: var(--color-text-muted);
 }
 
@@ -425,10 +455,11 @@ input {
   display: inline-block;
   margin-top: 0.75rem;
   color: var(--color-accent);
+  text-decoration: underline;
 }
 
 /* ---------------------------------------------------------------------------
- * Reading content (.prose) — the sanitized feed body
+ * Reading content (.prose)
  * ------------------------------------------------------------------------- */
 
 .prose {
@@ -448,58 +479,73 @@ input {
 .prose h5,
 .prose h6 {
   color: var(--color-text);
+  margin: 1.5em 0 0.5em;
   line-height: 1.25;
-  margin: 1.25em 0 0.5em;
+  font-weight: bold;
 }
+
+.prose h1 { font-size: 1.5em; }
+.prose h2 { font-size: 1.3em; }
+.prose h3 { font-size: 1.15em; }
+.prose h4, .prose h5, .prose h6 { font-size: 1em; }
 
 .prose a {
   color: var(--color-accent);
+  text-decoration: underline;
 }
 
-.prose img {
-  max-width: 100%;
-  height: auto;
+.prose a:hover {
+  opacity: 0.85;
 }
 
 .prose blockquote {
-  margin: 0 0 1em;
-  padding: 0.25em 1em;
-  border-left: 3px solid var(--color-accent);
+  margin: 1em 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--color-border);
   color: var(--color-text-muted);
 }
 
 .prose pre {
+  margin: 1em 0;
+  padding: 0.75rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 0.75rem;
   overflow-x: auto;
 }
 
 .prose code {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  padding: 0.1em 0.3em;
-  font-family: var(--font-family);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
 }
 
-.prose pre code {
-  background: none;
-  border: none;
-  padding: 0;
+.prose p code,
+.prose li code {
+  padding: 0.1rem 0.3rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
 .prose ul,
 .prose ol {
   margin: 0 0 1em;
-  padding-left: 1.5em;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.25em;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em 0;
 }
 
 .prose hr {
-  border: none;
+  margin: 2em 0;
+  border: 0;
   border-top: 1px solid var(--color-border);
-  margin: 1.5em 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -507,17 +553,22 @@ input {
  * ------------------------------------------------------------------------- */
 
 .settings-panel {
-  color: var(--color-text);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
 }
 
 .settings-panel__group {
-  margin: 0 0 1rem;
-  padding: 0;
-  border: none;
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-surface);
 }
 
 .settings-panel__legend {
-  margin-bottom: 0.5rem;
+  padding: 0 0.35rem;
+  font-size: 0.85em;
   font-weight: 600;
   color: var(--color-text);
 }
@@ -526,28 +577,15 @@ input {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-top: 0.35rem;
 }
 
 .settings-panel__option {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-text);
   cursor: pointer;
-}
-
-.settings-panel__option:has(input:checked) {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-bg);
-}
-
-.settings-panel__option:hover {
-  border-color: var(--color-accent);
+  color: var(--color-text);
 }
 
 .settings-panel__option input {
@@ -567,6 +605,7 @@ input {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  flex: 1 1 auto;
 }
 
 .add-feed-form__label {
@@ -575,13 +614,13 @@ input {
 }
 
 .add-feed-form__input {
-  flex: 1 1 220px;
-  min-width: 0;
-  padding: 0.35rem 0.6rem;
+  flex: 0 1 280px;
+  min-width: 140px;
+  padding: 0.3rem 0.5rem;
   background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .add-feed-form__input:focus {
@@ -590,11 +629,16 @@ input {
 }
 
 .add-feed-form__submit {
-  padding: 0.35rem 0.9rem;
-  background: var(--color-accent);
-  border: 1px solid var(--color-accent);
-  border-radius: 4px;
-  color: var(--color-bg);
+  padding: 0.3rem 0.75rem;
+  background: #efefef;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  color: #000000;
+}
+
+html[data-theme="dark"] .add-feed-form__submit {
+  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .add-feed-form__submit:hover:not(:disabled) {
@@ -619,11 +663,16 @@ input {
 }
 
 .refresh-container__button {
-  padding: 0.35rem 0.9rem;
+  padding: 0.3rem 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  color: var(--color-text);
+  border-radius: 0;
+  background: #efefef;
+  color: #000000;
+}
+
+html[data-theme="dark"] .refresh-container__button {
+  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .refresh-container__button:hover:not(:disabled) {
@@ -637,7 +686,6 @@ input {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-accent);
-  border-radius: 4px;
   color: var(--color-text);
   font-size: 0.85em;
 }
@@ -652,7 +700,7 @@ input {
 }
 
 /* ===========================================================================
- * DESIGN THEME SKINS (Flat, Classic XP, Clean Editorial)
+ * DESIGN THEME SKINS (Classic XP & Clean Editorial overrides)
  * ========================================================================= */
 
 /* ---------------------------------------------------------------------------
@@ -760,6 +808,7 @@ html[data-visual="classic"] .add-feed-form__input {
 html[data-visual="classic"] .feed-sidebar__item,
 html[data-visual="classic"] .entry-list-item__button {
   border-radius: 0;
+  text-decoration: none;
 }
 
 html[data-visual="classic"] .feed-sidebar__item:hover,
@@ -832,6 +881,7 @@ html[data-visual="clean"][data-theme="dark"] .reading-pane {
 html[data-visual="clean"] .feed-sidebar__item {
   border-radius: 6px;
   font-weight: 500;
+  text-decoration: none;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -861,6 +911,7 @@ html[data-visual="clean"] .entry-list-item__title {
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.35;
+  text-decoration: none;
 }
 
 html[data-visual="clean"] .entry-list-item--selected .entry-list-item__button {
@@ -898,5 +949,3 @@ html[data-visual="clean"] .add-feed-form__input {
   border-radius: 6px;
   transition: all 0.15s ease;
 }
-
-

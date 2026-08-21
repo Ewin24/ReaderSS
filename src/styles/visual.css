@@ -8,7 +8,8 @@
  * DESIGN THEMES (visualTheme):
  *
  * 1. FLAT (Default Base in :root / html[data-theme="dark"]):
- *    Modern, clean flat design with neutral surfaces and blue accent.
+ *    Raw HTML aesthetic -- unstyled browser feel, classic serif/Times typography,
+ *    plain black borders, raw blue HTML links, and zero fluff.
  *
  * 2. CLASSIC (html[data-visual="classic"]):
  *    Windows XP / Classic Desktop aesthetic with warm-gray desktop tone (#ece9d8),
@@ -24,26 +25,26 @@
  */
 
 /* ============================================================================
- * 1. FLAT THEME (Default base in :root / html[data-theme="dark"])
+ * 1. FLAT THEME (Raw HTML aesthetic -- default base in :root / html[data-theme="dark"])
  * ========================================================================= */
 :root {
   --color-bg: #ffffff;
-  --color-surface: #f5f5f5;
-  --color-text: #1a1a1a;
-  --color-text-muted: #6b6b6b;
-  --color-accent: #2563eb;
-  --color-border: #d4d4d4;
-  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-surface: #ffffff;
+  --color-text: #000000;
+  --color-text-muted: #555555;
+  --color-accent: #0000ee;
+  --color-border: #000000;
+  --font-family: "Times New Roman", Times, Georgia, serif;
   --font-size-base: 1rem;
 }
 
 html[data-theme="dark"] {
-  --color-bg: #111111;
-  --color-surface: #1c1c1e;
-  --color-text: #f2f2f2;
-  --color-text-muted: #9a9a9a;
-  --color-accent: #60a5fa;
-  --color-border: #333333;
+  --color-bg: #121212;
+  --color-surface: #121212;
+  --color-text: #f0f0f0;
+  --color-text-muted: #aaaaaa;
+  --color-accent: #8ab4f8;
+  --color-border: #777777;
 }
 
 /* ============================================================================
