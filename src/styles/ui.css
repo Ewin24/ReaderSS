@@ -651,54 +651,243 @@ input {
   color: var(--color-text-muted);
 }
 
-/* ---------------------------------------------------------------------------
- * Design theme specific visual enhancements (Classic & Clean)
- * ------------------------------------------------------------------------- */
+/* ===========================================================================
+ * DESIGN THEME SKINS (Flat, Classic XP, Clean Editorial)
+ * ========================================================================= */
 
-/* CLASSIC (Windows XP / Classic desktop) enhancements */
-html[data-visual="classic"] .app-shell__actions {
+/* ---------------------------------------------------------------------------
+ * CLASSIC THEME (Windows XP / Classic desktop aesthetic)
+ * ------------------------------------------------------------------------- */
+html[data-visual="classic"] {
   background: var(--color-bg);
-  border-bottom: 2px solid var(--color-border);
 }
 
+/* Actions Toolbar: Classic WinXP gradient bar */
+html[data-visual="classic"] .app-shell__actions {
+  background: linear-gradient(180deg, #f6f5ee 0%, #ece9d8 100%);
+  border-bottom: 2px solid var(--color-border);
+  box-shadow: inset 0 1px 0 #ffffff;
+  padding: 0.5rem 0.75rem;
+}
+
+html[data-visual="classic"][data-theme="dark"] .app-shell__actions {
+  background: linear-gradient(180deg, #36393f 0%, #202225 100%);
+  border-bottom: 2px solid var(--color-border);
+  box-shadow: none;
+}
+
+/* Panels: Classic XP sunken wells with structured borders */
 html[data-visual="classic"] .feed-sidebar,
 html[data-visual="classic"] .entry-list,
 html[data-visual="classic"] .reading-pane {
+  background: var(--color-surface);
   border: 2px solid var(--color-border);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.12);
 }
 
+html[data-visual="classic"][data-theme="dark"] .feed-sidebar,
+html[data-visual="classic"][data-theme="dark"] .entry-list,
+html[data-visual="classic"][data-theme="dark"] .reading-pane {
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* Classic XP Buttons (beveled 3D controls) */
+html[data-visual="classic"] .app-shell__settings-toggle,
+html[data-visual="classic"] .reading-pane__back,
+html[data-visual="classic"] .entry-list__pagination button,
+html[data-visual="classic"] .reading-pane__pagination button,
+html[data-visual="classic"] .refresh-container__button,
+html[data-visual="classic"] .add-feed-form__submit,
+html[data-visual="classic"] .reading-pane__toggle-read,
+html[data-visual="classic"] .reading-pane__toggle-star,
+html[data-visual="classic"] .feed-sidebar__confirm-remove-yes,
+html[data-visual="classic"] .feed-sidebar__confirm-remove-cancel {
+  background: linear-gradient(180deg, #ffffff 0%, #ece9d8 100%);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 #ffffff;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+html[data-visual="classic"] .app-shell__settings-toggle:hover,
+html[data-visual="classic"] .reading-pane__back:hover,
+html[data-visual="classic"] .entry-list__pagination button:hover:not(:disabled),
+html[data-visual="classic"] .reading-pane__pagination button:hover:not(:disabled),
+html[data-visual="classic"] .refresh-container__button:hover:not(:disabled),
+html[data-visual="classic"] .add-feed-form__submit:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fff9e6 0%, #fedb88 100%);
+  border-color: #e59700;
+  color: #000000;
+}
+
+html[data-visual="classic"][data-theme="dark"] .app-shell__settings-toggle,
+html[data-visual="classic"][data-theme="dark"] .reading-pane__back,
+html[data-visual="classic"][data-theme="dark"] .entry-list__pagination button,
+html[data-visual="classic"][data-theme="dark"] .reading-pane__pagination button,
+html[data-visual="classic"][data-theme="dark"] .refresh-container__button,
+html[data-visual="classic"][data-theme="dark"] .add-feed-form__submit,
+html[data-visual="classic"][data-theme="dark"] .reading-pane__toggle-read,
+html[data-visual="classic"][data-theme="dark"] .reading-pane__toggle-star,
+html[data-visual="classic"][data-theme="dark"] .feed-sidebar__confirm-remove-yes,
+html[data-visual="classic"][data-theme="dark"] .feed-sidebar__confirm-remove-cancel {
+  background: linear-gradient(180deg, #40444b 0%, #2f3136 100%);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  color: var(--color-text);
+}
+
+html[data-visual="classic"][data-theme="dark"] .app-shell__settings-toggle:hover,
+html[data-visual="classic"][data-theme="dark"] .reading-pane__back:hover,
+html[data-visual="classic"][data-theme="dark"] .entry-list__pagination button:hover:not(:disabled),
+html[data-visual="classic"][data-theme="dark"] .reading-pane__pagination button:hover:not(:disabled),
+html[data-visual="classic"][data-theme="dark"] .refresh-container__button:hover:not(:disabled),
+html[data-visual="classic"][data-theme="dark"] .add-feed-form__submit:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4f545c 0%, #40444b 100%);
+  border-color: #7289da;
+  color: #ffffff;
+}
+
+/* Classic Form inputs */
+html[data-visual="classic"] .add-feed-form__input {
+  border: 2px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-surface);
+  box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.15);
+}
+
+/* Classic Sidebar & Entry items */
 html[data-visual="classic"] .feed-sidebar__item,
 html[data-visual="classic"] .entry-list-item__button {
-  border-radius: 2px;
+  border-radius: 0;
+}
+
+html[data-visual="classic"] .feed-sidebar__item:hover,
+html[data-visual="classic"] .entry-list-item__button:hover {
+  background: #dce7f5;
+  color: #0a246a;
+}
+
+html[data-visual="classic"][data-theme="dark"] .feed-sidebar__item:hover,
+html[data-visual="classic"][data-theme="dark"] .entry-list-item__button:hover {
+  background: #3a3f47;
+  color: #ffffff;
 }
 
 html[data-visual="classic"] .feed-sidebar__item[aria-current="true"],
 html[data-visual="classic"] .entry-list-item--selected .entry-list-item__button {
   background: var(--color-accent);
   color: #ffffff;
+  border-radius: 0;
 }
 
-html[data-visual="classic"] .app-shell__settings-toggle,
-html[data-visual="classic"] .reading-pane__back,
-html[data-visual="classic"] .entry-list__pagination button,
-html[data-visual="classic"] .reading-pane__pagination button,
-html[data-visual="classic"] .refresh-container__button,
-html[data-visual="classic"] .add-feed-form__submit {
-  border-radius: 2px;
-  border: 1px solid var(--color-border);
+html[data-visual="classic"] .feed-sidebar__item[aria-current="true"] .feed-sidebar__item-count,
+html[data-visual="classic"] .entry-list-item--selected .entry-list-item__meta {
+  color: #dce7f5;
 }
 
-/* CLEAN (Scientific / Editorial minimalist) enhancements */
+/* ---------------------------------------------------------------------------
+ * CLEAN THEME (Scientific / Editorial paper aesthetic)
+ * ------------------------------------------------------------------------- */
+html[data-visual="clean"] {
+  background: var(--color-bg);
+}
+
+/* Clean Editorial Toolbar */
 html[data-visual="clean"] .app-shell__actions {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
+  padding: 0.75rem 1.25rem;
 }
 
-html[data-visual="clean"] .feed-sidebar__item,
+/* Clean Pane Hierarchy (Sidebar & List clean separators, Reading card) */
+html[data-visual="clean"] .feed-sidebar {
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+html[data-visual="clean"] .entry-list {
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+html[data-visual="clean"] .reading-pane {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+html[data-visual="clean"][data-theme="dark"] .reading-pane {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Clean Navigation & Article List */
+html[data-visual="clean"] .feed-sidebar__item {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+html[data-visual="clean"] .feed-sidebar__item:hover {
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--color-accent);
+}
+
+html[data-visual="clean"][data-theme="dark"] .feed-sidebar__item:hover {
+  background: rgba(45, 212, 191, 0.1);
+  color: var(--color-accent);
+}
+
+html[data-visual="clean"] .feed-sidebar__item[aria-current="true"] {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+}
+
 html[data-visual="clean"] .entry-list-item__button {
   border-radius: 6px;
+  margin: 2px 4px;
+  transition: background-color 0.15s ease;
 }
 
+html[data-visual="clean"] .entry-list-item__title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+html[data-visual="clean"] .entry-list-item--selected .entry-list-item__button {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Clean Reading Content & Typography */
+html[data-visual="clean"] .reading-pane__title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin-bottom: 0.5rem;
+}
+
+html[data-visual="clean"] .reading-pane__meta {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+html[data-visual="clean"] .prose {
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+/* Clean Buttons (modern soft-rounded controls) */
 html[data-visual="clean"] .app-shell__settings-toggle,
 html[data-visual="clean"] .reading-pane__back,
 html[data-visual="clean"] .entry-list__pagination button,
@@ -707,10 +896,7 @@ html[data-visual="clean"] .refresh-container__button,
 html[data-visual="clean"] .add-feed-form__submit,
 html[data-visual="clean"] .add-feed-form__input {
   border-radius: 6px;
+  transition: all 0.15s ease;
 }
 
-html[data-visual="clean"] .reading-pane__title {
-  letter-spacing: -0.02em;
-  font-weight: 700;
-}
 
