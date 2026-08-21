@@ -190,28 +190,49 @@ export async function openReaderSSDatabase(
   }
 }
 
-async function tryReadGithubConfig(): Promise<unknown> {
+/**
+ * Config keys that must survive a destructive database wipe. `github` was
+ * the original preserve target; `visual` (the visual-settings record) joined
+ * it so a user's chosen theme/font/layout survives a schema-recreate reset
+ * (spec "Destructive reset preservation"). This list is the single source of
+ * truth for the preserve step below.
+ */
+export const PRESERVED_CONFIG_KEYS = ["github", "visual"] as const;
+
+/**
+ * Reads every {@link PRESERVED_CONFIG_KEYS} record through a short-lived
+ * connection at whatever version is currently on disk, returning a map of
+ * key → value for the records that were readable (missing/throws are simply
+ * omitted). Used only by the destructive-reset escape hatch so a wipe does
+ * not silently drop user preferences that were still recoverable.
+ */
+async function tryReadPreservedConfigs(): Promise<Map<string, unknown>> {
+  const preserved = new Map<string, unknown>();
   try {
     const db = await openDB(DB_NAME);
     if (!db.objectStoreNames.contains("config")) {
       db.close();
-      return undefined;
+      return preserved;
     }
-    const record = await db.get("config", "github");
+    for (const key of PRESERVED_CONFIG_KEYS) {
+      const record = await db.get("config", key);
+      if (record?.value !== undefined) {
+        preserved.set(key, record.value);
+      }
+    }
     db.close();
-    return record?.value;
   } catch {
-    return undefined;
+    // A wipe cannot proceed if reading fails — fall back to preserving nothing.
   }
+  return preserved;
 }
 
 /**
- * The destructive-reset escape hatch: read `config/github`
- * through a short-lived connection at whatever version is currently on
+ * The destructive-reset escape hatch: read every {@link PRESERVED_CONFIG_KEYS}
+ * record through a short-lived connection at whatever version is currently on
  * disk, delete the database, recreate it at DB_VERSION, and write the
- * preserved `github` config record back if one was found. IndexedDB is a
- * rebuildable cache, so losing everything else is acceptable; silently
- * corrupting the store is not.
+ * preserved records back. IndexedDB is a rebuildable cache, so losing
+ * everything else is acceptable; silently corrupting the store is not.
  *
  * `cause` (the original schema failure) is intentionally NOT rethrown here
  * — recovering into a healthy database is the whole point of this escape
@@ -224,7 +245,7 @@ async function recreateDatabaseDestructively(
   onDestructiveReset?: (cause: unknown) => void,
   blockedTimeoutMs = DEFAULT_BLOCKED_TIMEOUT_MS,
 ): Promise<ReaderSSDatabase> {
-  const preservedGithubConfig = await tryReadGithubConfig();
+  const preservedConfigs = await tryReadPreservedConfigs();
 
   const deleteGuard = armBlockedTimeout(blockedTimeoutMs);
   await Promise.race([
@@ -239,8 +260,8 @@ async function recreateDatabaseDestructively(
     },
   });
 
-  if (preservedGithubConfig !== undefined) {
-    await db.put("config", { key: "github", value: preservedGithubConfig });
+  for (const [key, value] of preservedConfigs) {
+    await db.put("config", { key, value });
   }
 
   onDestructiveReset?.(cause);

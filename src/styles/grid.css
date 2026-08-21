@@ -50,10 +50,11 @@ body {
 .app-shell {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto 1fr 1fr;
+  grid-template-rows: auto auto auto 1fr 1fr;
   grid-template-areas:
     "toggle-error"
     "actions"
+    "settings"
     "sidebar"
     "pane";
   min-height: 100vh;
@@ -66,6 +67,16 @@ body {
 
 .app-shell__actions {
   grid-area: actions;
+}
+
+/* The settings panel is its own full-width row (D7) so it can never collide
+ * with a pane's column; it is collapsed (0 height) when hidden. */
+.app-shell__settings {
+  grid-area: settings;
+}
+
+.app-shell__settings[hidden] {
+  display: none;
 }
 
 .feed-sidebar {
@@ -137,10 +148,11 @@ body {
 @media (min-width: 768px) {
   .app-shell {
     grid-template-columns: 220px 320px 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     grid-template-areas:
       "toggle-error toggle-error toggle-error"
       "actions actions actions"
+      "settings settings settings"
       "sidebar list pane";
   }
 

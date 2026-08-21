@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/preact";
 import { ReadingPane, type ReadingPaneProps } from "./ReadingPane";
 import { SanitizerContext, type SanitizeFn } from "../SafeHtml";
+import { CONTENT_PAGE_SIZE } from "../../../domain/visual/contentPagination";
 
 const baseEntry = {
   id: "entry-1",
@@ -193,6 +194,126 @@ describe("ReadingPane", () => {
       });
 
       expect(screen.getByRole("button", { name: "Unstar" })).toHaveAttribute("aria-pressed", "true");
+    });
+  });
+
+  describe("content pagination (navMode=paginated)", () => {
+    // Build enough top-level blocks to span 3 pages regardless of the exact
+    // CONTENT_PAGE_SIZE, so page slicing and the footer are exercised for real.
+    function manyParagraphs(count: number): string {
+      return Array.from({ length: count }, (_, i) => `<p>Block ${i + 1}</p>`).join("");
+    }
+
+    const blockCount = CONTENT_PAGE_SIZE * 2 + 1;
+    const pageCount = 3;
+
+    it("renders only the current page's blocks, not the whole body, when paginated", () => {
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: manyParagraphs(blockCount) },
+        page: 1,
+        pageCount,
+      });
+
+      expect(screen.getByText("Block 1")).toBeInTheDocument();
+      expect(screen.getByText(`Block ${CONTENT_PAGE_SIZE}`)).toBeInTheDocument();
+      // A block on the next page must NOT be rendered.
+      expect(screen.queryByText(`Block ${CONTENT_PAGE_SIZE + 1}`)).not.toBeInTheDocument();
+    });
+
+    it("renders the later page's blocks when page > 1", () => {
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: manyParagraphs(blockCount) },
+        page: 2,
+        pageCount,
+      });
+
+      expect(screen.getByText(`Block ${CONTENT_PAGE_SIZE + 1}`)).toBeInTheDocument();
+      expect(screen.queryByText("Block 1")).not.toBeInTheDocument();
+    });
+
+    it("shows a 'Page X of Y' footer with Prev/Next, and calls the handlers", () => {
+      const onPrevPage = vi.fn();
+      const onNextPage = vi.fn();
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: manyParagraphs(blockCount) },
+        page: 2,
+        pageCount,
+        onPrevPage,
+        onNextPage,
+      });
+
+      expect(screen.getByText(`Page 2 of ${pageCount}`)).toBeInTheDocument();
+      const prev = screen.getByRole("button", { name: /previous page/i });
+      const next = screen.getByRole("button", { name: /next page/i });
+      expect(prev).not.toBeDisabled();
+      expect(next).not.toBeDisabled();
+
+      fireEvent.click(prev);
+      expect(onPrevPage).toHaveBeenCalledTimes(1);
+      fireEvent.click(next);
+      expect(onNextPage).toHaveBeenCalledTimes(1);
+    });
+
+    it("disables Prev on the first page and Next on the last page", () => {
+      const { rerender } = renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: manyParagraphs(blockCount) },
+        page: 1,
+        pageCount,
+        onPrevPage: vi.fn(),
+        onNextPage: vi.fn(),
+      });
+      expect(screen.getByRole("button", { name: /previous page/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /next page/i })).not.toBeDisabled();
+
+      rerender(
+        <SanitizerContext.Provider value={identitySanitize}>
+          <ReadingPane
+            entry={{ ...baseEntry, summary: null, content: manyParagraphs(blockCount) }}
+            page={pageCount}
+            pageCount={pageCount}
+            onPrevPage={vi.fn()}
+            onNextPage={vi.fn()}
+          />
+        </SanitizerContext.Provider>,
+      );
+      expect(screen.getByRole("button", { name: /previous page/i })).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: /next page/i })).toBeDisabled();
+    });
+
+    it("hides the pagination footer entirely when pageCount <= 1", () => {
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: "<p>Single page</p>" },
+        page: 1,
+        pageCount: 1,
+      });
+
+      expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /next page/i })).not.toBeInTheDocument();
+    });
+
+    it("advances at the scroll end only when the pane genuinely overflows (BUG A guard)", () => {
+      const onScrollEnd = vi.fn();
+      renderReadingPane({
+        entry: { ...baseEntry, summary: null, content: manyParagraphs(blockCount) },
+        page: 1,
+        pageCount,
+        onScrollEnd,
+      });
+
+      const pane = screen.getByRole("region", { name: "Reading pane" });
+      // No overflow: scrollHeight <= clientHeight → scroll must NOT advance.
+      Object.defineProperty(pane, "clientHeight", { value: 200, configurable: true });
+      Object.defineProperty(pane, "scrollHeight", { value: 100, configurable: true });
+      pane.scrollTop = 50;
+      fireEvent.scroll(pane);
+      expect(onScrollEnd).not.toHaveBeenCalled();
+
+      // Real overflow at the viewport end → advance.
+      Object.defineProperty(pane, "clientHeight", { value: 100, configurable: true });
+      Object.defineProperty(pane, "scrollHeight", { value: 200, configurable: true });
+      pane.scrollTop = 100;
+      fireEvent.scroll(pane);
+      expect(onScrollEnd).toHaveBeenCalledTimes(1);
     });
   });
 });

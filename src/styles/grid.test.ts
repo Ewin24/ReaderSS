@@ -81,7 +81,11 @@ describe("grid.css: non-pane app-shell children get explicit full-width placemen
   // Every other class `App.tsx` renders as a DIRECT child of `.app-shell`,
   // as of this fix (see the file-level comment above for the maintenance
   // contract on this list).
-  const KNOWN_NON_PANE_CHILD_CLASSES = ["app-shell__toggle-error", "app-shell__actions"];
+  const KNOWN_NON_PANE_CHILD_CLASSES = [
+    "app-shell__toggle-error",
+    "app-shell__actions",
+    "app-shell__settings",
+  ];
 
   function extractDesktopBlock(source: string): string {
     const mediaStart = source.indexOf("@media");

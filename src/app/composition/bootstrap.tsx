@@ -23,6 +23,7 @@ import { render } from "preact";
 import { App } from "../App";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { ServicesProvider } from "../providers/ServicesContext";
+import { SettingsProvider } from "../providers/SettingsProvider";
 import { SanitizerContext } from "../../ui/components/SafeHtml";
 import { describeError } from "../../domain/errors/describeError";
 import { buildServices } from "./buildServices";
@@ -88,9 +89,11 @@ export async function bootstrapApp(root: HTMLElement): Promise<void> {
     render(
       <ErrorBoundary>
         <ServicesProvider services={services}>
-          <SanitizerContext.Provider value={sanitize}>
-            <App />
-          </SanitizerContext.Provider>
+          <SettingsProvider>
+            <SanitizerContext.Provider value={sanitize}>
+              <App />
+            </SanitizerContext.Provider>
+          </SettingsProvider>
         </ServicesProvider>
       </ErrorBoundary>,
       root,
