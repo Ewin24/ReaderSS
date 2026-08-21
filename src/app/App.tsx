@@ -33,6 +33,7 @@ import {
 } from "../domain/visual/contentPagination";
 import { shortHash } from "../domain/identity/hash";
 import { useSanitizer } from "../ui/components/SafeHtml";
+import { useViewportPageSize } from "./useViewportPageSize";
 import type { AppEntry, AppFeed } from "./types";
 import "../styles/grid.css";
 import "../styles/visual.css";
@@ -96,6 +97,10 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   // The same single sanitize choke point SafeHtml uses (DOMPurify), needed
   // here only to derive the content page count from the clean body.
   const sanitize = useSanitizer();
+  // Viewport-adaptive content page size: number of blocks that fit in the
+  // reading-pane height. Only active when navMode="paginated". Falls back to
+  // the domain constant (6) in test environments without ResizeObserver.
+  const contentBlocksPerPage = useViewportPageSize();
 
   const [storeFeeds, setStoreFeeds] = useState<AppFeed[]>([]);
   const [storeEntries, setStoreEntries] = useState<AppEntry[]>([]);
@@ -267,8 +272,8 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
       return 1;
     }
     const cleanBody = sanitize(contentBody, `${selectedEntry.id}:${contentHash}`);
-    return contentPageCount(splitTopLevelHtmlBlocks(cleanBody));
-  }, [paginated, contentBody, contentHash, selectedEntry, sanitize]);
+    return contentPageCount(splitTopLevelHtmlBlocks(cleanBody), contentBlocksPerPage);
+  }, [paginated, contentBody, contentHash, selectedEntry, sanitize, contentBlocksPerPage]);
 
   // Reset the content page whenever the selected entry or its content changes
   // (mirrors the list's ref-guarded reset, D5). A ref guards against Preact
