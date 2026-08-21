@@ -149,7 +149,7 @@ describe("SettingsProvider", () => {
     );
   });
 
-  it("reverts the context and sets saveError when the save fails", async () => {
+  it("keeps the optimistic change and sets saveError when the save fails", async () => {
     stubMatchMedia(false);
     const localStore = makeLocalStore();
     localStore.putConfigValue = vi.fn(async () => {
@@ -161,8 +161,10 @@ describe("SettingsProvider", () => {
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("ready"));
     screen.getByText("Set size lg").click();
 
+    // The optimistic change stays visible in the session (a failed write must
+    // not silently undo the click), and the failure is surfaced non-blocking.
+    await waitFor(() => expect(screen.getByTestId("font-size")).toHaveTextContent("lg"));
     await waitFor(() => expect(screen.getByTestId("save-error")).toHaveTextContent(/IDB blocked/i));
-    expect(screen.getByTestId("font-size")).toHaveTextContent(DEFAULT_VISUAL_SETTINGS.fontSize);
   });
 
   it("applies theme/font data attributes to documentElement on mount", async () => {

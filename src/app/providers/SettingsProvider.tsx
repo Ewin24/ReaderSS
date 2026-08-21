@@ -5,9 +5,10 @@
  *
  * - Loads persisted settings on mount (defaults when absent/corrupt).
  * - `updateSettings(patch)` merges optimistically, persists immediately, and
- *   REVERTS the context value + sets `saveError` when the write fails, so the
- *   UI never shows a value that failed to persist (spec "Persistence across
- *   reload" / "Auto follows system").
+ *   marks `saveError` (non-blocking) when the write fails. The optimistic
+ *   change is KEPT in the session so the user always sees the theme/font/
+ *   navigation apply, even if the write to IndexedDB fails; a failed write
+ *   never silently reverts a change the user just made.
  * - When `theme` is `auto`, the effective theme resolves from
  *   `prefers-color-scheme` via `useMediaQuery`, re-applying live when the OS
  *   preference changes (spec "Auto follows system").
@@ -67,13 +68,14 @@ export function SettingsProvider({ children }: { children: ComponentChildren }) 
   }, [settings, resolvedTheme]);
 
   const updateSettings = (patch: Partial<VisualSettings>) => {
-    const previous = settings;
-    const next = { ...previous, ...patch };
+    // Merge optimistically and apply immediately. The new value stays in the
+    // session even if the persist write fails, so the user always sees the
+    // change take effect (a failed write must not silently undo the click).
+    const next = { ...settings, ...patch };
     setSettings(next);
     setSaveError(null);
     saveVisualSettings(services, next).then((result) => {
       if (result.status === "error") {
-        setSettings(previous);
         setSaveError(result.message);
       }
     });
