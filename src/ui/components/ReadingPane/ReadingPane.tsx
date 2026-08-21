@@ -198,6 +198,7 @@ export function ReadingPane({
             <button
               type="button"
               class="reading-pane__toggle-read"
+              title="Mark as unread"
               onClick={() => onToggleRead(entry.id)}
             >
               Mark as unread
@@ -208,6 +209,7 @@ export function ReadingPane({
               type="button"
               class="reading-pane__toggle-star"
               aria-pressed={entry.starred === 1}
+              title={entry.starred === 1 ? "Unstar" : "Star"}
               onClick={() => onToggleStar(entry.id)}
             >
               {entry.starred === 1 ? "Unstar" : "Star"}
