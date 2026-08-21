@@ -68,33 +68,43 @@ export function EntryListItem({
       </button>
       {/* Siblings of the select button, not nested inside it -- a <button>
           cannot legally contain another interactive control. */}
-      {onToggleRead && (
-        <button
-          type="button"
-          class="entry-list-item__toggle-read"
-          aria-pressed={entry.read === 1}
-          aria-label={`Mark "${entry.title}" as ${entry.read === 1 ? "unread" : "read"}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleRead(entry.id);
-          }}
-        >
-          {entry.read === 1 ? "Mark as unread" : "Mark as read"}
-        </button>
-      )}
-      {onToggleStar && (
-        <button
-          type="button"
-          class="entry-list-item__toggle-star"
-          aria-pressed={entry.starred === 1}
-          aria-label={`${entry.starred === 1 ? "Unstar" : "Star"} "${entry.title}"`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleStar(entry.id);
-          }}
-        >
-          {entry.starred === 1 ? "Unstar" : "Star"}
-        </button>
+      {(onToggleRead || onToggleStar) && (
+        <div class="entry-list-item__actions">
+          {onToggleRead && (
+            <button
+              type="button"
+              class="entry-list-item__toggle-read"
+              aria-pressed={entry.read === 1}
+              aria-label={`Mark "${entry.title}" as ${entry.read === 1 ? "unread" : "read"}`}
+              title={entry.read === 1 ? "Mark as unread" : "Mark as read"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleRead(entry.id);
+              }}
+            >
+              <span aria-hidden="true" class="entry-list-item__icon">
+                {entry.read === 1 ? "○" : "●"}
+              </span>
+            </button>
+          )}
+          {onToggleStar && (
+            <button
+              type="button"
+              class="entry-list-item__toggle-star"
+              aria-pressed={entry.starred === 1}
+              aria-label={`${entry.starred === 1 ? "Unstar" : "Star"} "${entry.title}"`}
+              title={entry.starred === 1 ? "Unstar" : "Star"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleStar(entry.id);
+              }}
+            >
+              <span aria-hidden="true" class="entry-list-item__icon">
+                {entry.starred === 1 ? "★" : "☆"}
+              </span>
+            </button>
+          )}
+        </div>
       )}
     </li>
   );
