@@ -1132,3 +1132,73 @@ describe("App — remembered pagination position", () => {
     expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Structural guard for the defect class grid.css's file comment describes:
+ * a direct child of `.app-shell` with NO grid placement falls into the
+ * implicit grid and lands somewhere nobody chose.
+ *
+ * `grid.test.ts` guards the CSS side (every known non-pane class has a
+ * full-width area). It cannot guard THIS side, because it reads CSS text and
+ * has no idea what `App` actually renders. This test renders the real shell
+ * and checks the DOM: every direct child must carry a class the layout
+ * actually places.
+ *
+ * It was written after `EntryList`'s pagination nav — a sibling of the `<ul>`
+ * inside a Fragment, and therefore a direct child of `.app-shell` — turned out
+ * to have no `grid-area` at all.
+ */
+describe("App — every direct child of the shell has a placement", () => {
+  const PLACED_CLASSES = [
+    "app-shell__toggle-error",
+    "app-shell__actions",
+    "app-shell__settings",
+    "app-shell__feed-note",
+    "feed-sidebar",
+    "entry-list-pane",
+    "reading-pane",
+  ];
+
+  it("places every direct child of .app-shell", async () => {
+    stubMatchMedia(true);
+    const { container } = renderApp({ feeds, entries });
+
+    const shell = container.querySelector(".app-shell");
+    expect(shell).not.toBeNull();
+
+    const unplaced = [...(shell as HTMLElement).children]
+      .map((child) => child.className)
+      .filter((className) => !PLACED_CLASSES.some((known) => className.split(/\s+/).includes(known)));
+
+    expect(unplaced).toEqual([]);
+  });
+  it("places the pagination nav too, which is a sibling of the list", async () => {
+    stubMatchMedia(true);
+    const many = Array.from({ length: 25 }, (_, i) => ({
+      id: `e-${i + 1}`,
+      feedId: "feed-1",
+      title: `Article ${i + 1}`,
+      publishedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+      read: 0 as const,
+      starred: 0 as const,
+      link: `https://example.com/${i + 1}`,
+      summary: null,
+      content: null,
+    }));
+    const store = makeLocalStore(feeds.map(toDomainFeed), many.map(toDomainEntry));
+    store.getConfigValue = vi.fn(async <T,>(key: string): Promise<T | undefined> =>
+      key === "visual" ? ({ navMode: "paginated" } as T) : undefined,
+    ) as LocalStorePort["getConfigValue"];
+
+    const { container } = renderApp({ feeds, entries: many }, store);
+    // The footer only exists once the paginated mode has loaded.
+    await screen.findByText(/page 1 of/i);
+
+    const shell = container.querySelector(".app-shell") as HTMLElement;
+    const unplaced = [...shell.children]
+      .map((child) => child.className)
+      .filter((className) => !PLACED_CLASSES.some((known) => className.split(/\s+/).includes(known)));
+
+    expect(unplaced).toEqual([]);
+  });
+});
