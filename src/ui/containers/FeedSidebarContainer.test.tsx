@@ -436,3 +436,86 @@ describe("FeedSidebarContainer — moving a feed into a collection", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/no longer exists/i);
   });
 });
+
+/**
+ * `load()` used to flip back to "loading" on EVERY refresh, and the loading
+ * branch returns a different element tree — so `FeedSidebar` unmounted and
+ * remounted, losing which collections the reader had collapsed.
+ *
+ * That fired constantly: opening any article marks it read, which bumps the
+ * entry-state signal, which reloads this container. Collapse a collection,
+ * click an article, and everything sprang open again — plus a flash of
+ * "Loading feeds…" every time.
+ */
+describe("FeedSidebarContainer — a refresh must not reset the sidebar's own state", () => {
+  const twoCollections = () => [
+    makeFeed({ id: "feed-1", title: "Hacker News", folder: "Tech" }),
+    makeFeed({ id: "feed-2", title: "Ars Technica", folder: "News" }),
+  ];
+
+  it("keeps a collapsed collection collapsed across a refresh", async () => {
+    const localStore = makeLocalStore({ listFeeds: vi.fn().mockResolvedValue(twoCollections()) });
+    const services = { localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub };
+
+    const { rerender } = render(
+      <ServicesProvider services={services}>
+        <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} refreshSignal={[0, 0]} />
+      </ServicesProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /^tech,/i }));
+    expect(screen.queryByRole("list", { name: "Tech" })).not.toBeInTheDocument();
+
+    // Exactly what marking an entry read does to this container.
+    rerender(
+      <ServicesProvider services={services}>
+        <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} refreshSignal={[0, 1]} />
+      </ServicesProvider>,
+    );
+    await waitFor(() => expect(localStore.listFeeds).toHaveBeenCalledTimes(2));
+
+    expect(screen.queryByRole("list", { name: "Tech" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^tech,/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  it("does not blank the list back to 'Loading feeds…' on a refresh", async () => {
+    const localStore = makeLocalStore({ listFeeds: vi.fn().mockResolvedValue(twoCollections()) });
+    const services = { localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub };
+
+    const { rerender } = render(
+      <ServicesProvider services={services}>
+        <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} refreshSignal={[0, 0]} />
+      </ServicesProvider>,
+    );
+    await screen.findByRole("button", { name: /^hacker news,/i });
+
+    rerender(
+      <ServicesProvider services={services}>
+        <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} refreshSignal={[0, 1]} />
+      </ServicesProvider>,
+    );
+
+    // The list stays on screen through the reload: no flash of a placeholder.
+    expect(screen.getByRole("button", { name: /^hacker news,/i })).toBeInTheDocument();
+    expect(screen.queryByText(/loading feeds/i)).not.toBeInTheDocument();
+  });
+
+  it("still shows the placeholder on the very first load", () => {
+    const localStore = makeLocalStore({
+      listFeeds: vi.fn().mockReturnValue(new Promise(() => {})),
+    });
+
+    render(
+      <ServicesProvider
+        services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}
+      >
+        <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} refreshSignal={[0, 0]} />
+      </ServicesProvider>,
+    );
+
+    expect(screen.getByText(/loading feeds/i)).toBeInTheDocument();
+  });
+});

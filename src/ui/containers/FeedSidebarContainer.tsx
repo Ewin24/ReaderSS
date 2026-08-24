@@ -83,7 +83,18 @@ export function FeedSidebarContainer({
   const [moveErrorMessage, setMoveErrorMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoadState("loading");
+    // Only the FIRST load shows the placeholder. A refresh keeps the list on
+    // screen while it re-reads.
+    //
+    // This is not cosmetic. The loading branch below returns a different
+    // element tree, so flipping back to "loading" UNMOUNTED `FeedSidebar` and
+    // threw away its own state -- which collections were collapsed, which row
+    // was mid-move. And it fired constantly: opening any article marks it
+    // read, which bumps the entry-state signal, which reloads this container.
+    // Collapse a collection, click an article, and everything sprang open
+    // again. After a failed load the placeholder does come back, because there
+    // is no list on screen to preserve.
+    setLoadState((current) => (current === "loaded" ? "loaded" : "loading"));
     try {
       const feeds = await services.localStore.listFeeds();
       const withCounts = await Promise.all(
