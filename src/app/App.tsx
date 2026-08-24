@@ -59,7 +59,6 @@ interface LoadState {
 
 const LOADED: LoadState = { status: "loaded" };
 
-
 function toAppFeed(feed: {
   id: string;
   title: string;

@@ -58,6 +58,151 @@ Adding a feed reports one of eight distinct outcomes — never a generic
 | Feed is too large to fetch | The response body exceeded the relay's 5 MiB cap. | Nothing to fix client-side; this feed is rejected by design. |
 | Feed was found but could not be saved | Fetch and parse succeeded, but the local IndexedDB write failed (e.g. storage quota). | Free up browser storage or check the browser console for the underlying error. |
 
+### Moving feeds in and out (OPML)
+
+The settings panel carries an **Import OPML** / **Export OPML** pair. OPML is
+the subscription-list format every other reader speaks, so this is how you
+bring feeds in from elsewhere or take yours with you.
+
+What it does and does not carry, stated plainly:
+
+- **Subscriptions only.** An OPML file lists feed URLs, their titles, and
+  their folders. It carries **no entries, no read state, and no stars** — an
+  OPML export is a way to move your feeds, *not* a backup of your reading.
+- **Import subscribes for real.** Every feed in the file goes through exactly
+  the same fetch, parse, validation and duplicate check as one typed into the
+  add-feed box. Nothing is added that would not have been added by hand.
+- **One feed at a time.** A 60-feed file is 60 sequential requests through the
+  relay, not 60 at once. It is slower on purpose; progress is shown as it
+  goes, and there is a **Cancel import** button. Cancelling stops the
+  remaining feeds — feeds already added stay added, because an import is not a
+  transaction.
+- **One bad feed does not stop the rest.** Each feed reports its own outcome,
+  and the summary afterwards names only the ones that did not get added.
+- **A feed listed twice in the file is imported once.**
+
+#### How folders are read
+
+There is **no `folder` element or attribute in OPML** — this surprises people.
+The spec says a subscription list is "a possibly multiple-level list", where a
+group is just an `<outline>` that contains other outlines. Grouping by nesting
+is a universal convention, and the spec itself warns that "some processors may
+not understand and preserve the structure".
+
+ReaderSS reads both ways a file can express a group:
+
+| In the file | Becomes |
+| --- | --- |
+| Nested `<outline text="Tech">` around the feed | Folder `Tech` |
+| The spec's `category="/Tech/Security"` attribute | Folder `Security` |
+| Both at once | The nesting wins — it is structure the author built |
+| Neither | No folder. Nothing is invented, and no "Uncategorized" is added |
+
+A ReaderSS feed carries a single folder name, so where a path has several
+levels the **nearest** one wins, the same either way: a feed under
+`Tech > Security > Blogs`, or with `category="/Tech/Security/Blogs"`, lands in
+`Blogs`.
+
+Being deliberately lenient about the rest: the spec lists `type`, `text` and
+`xmlUrl` as required on a subscription outline, but ReaderSS asks only for a
+valid `xmlUrl`. Files with no `type`, with `title` but no `text`, OPML 1.0
+files, and files with no XML declaration all import.
+
+#### What export writes
+
+`readerss-subscriptions.opml`, in the shape feed readers actually produce —
+`type="rss"`, both `text` and `title`, `xmlUrl`, `htmlUrl` when the feed's site
+is known, feeds nested inside their folder outline, and a `<head>` carrying
+`dateCreated`/`dateModified` and `<docs>`:
+
+```xml
+<opml version="2.0">
+  <head>
+    <title>ReaderSS subscriptions</title>
+    <dateCreated>Mon, 24 Aug 2026 13:00:00 GMT</dateCreated>
+    <dateModified>Mon, 24 Aug 2026 13:00:00 GMT</dateModified>
+    <docs>http://opml.org/spec2.opml</docs>
+  </head>
+  <body>
+    <outline text="Comics">
+      <outline text="Loading Artist" type="rss" title="Loading Artist"
+        xmlUrl="https://loadingartist.com/index.xml"/>
+    </outline>
+  </body>
+</opml>
+```
+
+### Collections
+
+The sidebar groups your feeds by collection — the same thing OPML calls a
+feed's *folder*, one field, one meaning. Named collections come first in
+alphabetical order; feeds in no collection sit together at the bottom under
+**No collection**.
+
+A flat subscription list — the most common OPML shape, and where every account
+starts — shows **no headings at all**. Labelling the whole sidebar "No
+collection" would announce a distinction that does not exist yet.
+
+Each feed has a **🗂 Move** control: pick one of the collections that currently
+exist, choose **No collection** to take the feed out of one, or **New
+collection…** and type a name. The list offered is always the collections in
+actual use, never a fixed or invented set. A feed belongs to at most one
+collection — that is exactly what an OPML subscription list can express.
+
+Grouping is display only. Nothing named "No collection" is ever written to a
+feed or into an OPML export; ungrouped feeds export at the top level, exactly
+as they arrived.
+
+**Collapsing.** Every collection heading is a toggle — click it (or press it
+with the keyboard) to fold that collection away, so a long subscription list
+does not have to be scrolled end to end. The ungrouped pile folds too.
+
+- A collapsed collection keeps its heading **and its unread count**, so you can
+  still see where something new is without opening it. When there is nothing
+  unread, the badge shows how many feeds are inside instead.
+- Collapsed feeds leave the accessibility tree, not just the screen.
+- **This is not remembered across reloads.** Open the app again and everything
+  is expanded. It is session-scoped UI state on purpose, the same as which row
+  is mid-confirmation.
+- A collection that appears later — imported, or created by filing a feed —
+  starts expanded. What gets tracked is which collections you collapsed, so
+  nothing has to be registered anywhere to be visible.
+- A flat list has no headings, so it has no collapse control either: nothing
+  can be hidden behind a control that is not rendered.
+
+> **Why a picker and not drag and drop.** Dragging is invisible to keyboard and
+> screen-reader users, awkward on touch, and cannot be exercised by this
+> project's tests — jsdom performs no layout and synthesizes no drag, so a
+> drag-and-drop implementation would ship untested by construction. A control
+> everyone can operate, and that the suite actually covers, was judged the
+> better trade. Drag and drop could be added *on top* of it later as a
+> shortcut, never as the only way.
+
+### Your own note on a feed
+
+Select a feed and a note row appears above the panes: **Add a note about
+&lt;feed&gt;**. Write why you follow it, what you want from it, what to skip.
+
+- It is **yours**. Nothing in the fetch/parse path ever writes it, so a
+  refresh can never overwrite what you typed.
+- It is stored with the feed and **travels in your OPML export** as the
+  standard `description` attribute, so another reader can read it.
+- Saving an empty note removes it. A note of only whitespace is not a note.
+- It is rendered as plain text, never as HTML.
+
+**On importing descriptions from elsewhere.** OPML 2.0 defines `description`
+as an *attribute* of `<outline>`, and that is the form ReaderSS reads and
+writes. Some exporters instead write a `<description>` **child element**, and
+that form is not read — the parser does not surface it. If your file uses it,
+those descriptions will not arrive. Two further points, so nothing is
+implied that is not true:
+
+- A **folder's** description is never copied onto the feeds inside it. It
+  describes the folder, and ReaderSS has no folder entity to hold it — a feed
+  carries only its folder's *name*.
+- So a file whose only descriptions are folder-level child elements imports
+  its feeds and folders correctly, and arrives with no notes.
+
 ### Where your data lives
 
 Everything — subscriptions, entries, read state, stars — is stored in your
@@ -102,10 +247,9 @@ Stated plainly, not implied:
   do carry forward-looking names referencing a future GitHub-based merge,
   but no sync code exists to use them.)
 - **No cross-device sync, no merge algorithm.**
-- **No OPML import or export.**
 - **No full-text search.**
-- **No folders or tags** in the UI (the data model has an internal `folder`
-  field, unused by any screen).
+- **No tags.** A feed belongs to at most one collection (see
+  [Collections](#collections)), not to several at once.
 - **No article extraction.** Feeds that provide only a summary link out to
   the original article instead of fetching full content.
 
@@ -117,10 +261,10 @@ Stated plainly, not implied:
 
 | Path | Contents |
 | --- | --- |
-| `src/domain/` | Pure logic: models, retention policy, URL/identity helpers. No I/O. |
+| `src/domain/` | Pure logic: models, retention policy, feed grouping, URL/identity/OPML helpers. No I/O. |
 | `src/ports/` | Interfaces the domain/services depend on (storage, feed source, parser, clock, sanitizer). |
 | `src/adapters/` | Concrete implementations of ports (IndexedDB store, relay-backed feed source, DOMPurify sanitizer). |
-| `src/services/` | Use cases: `subscribeToFeed`, `refreshFeeds`, `toggleRead`, `toggleStar`. |
+| `src/services/` | Use cases: `subscribeToFeed`, `refreshFeeds`, `toggleRead`, `toggleStar`, `importOpml`, `exportOpml`, `setFeedNote`, `setFeedFolder`. |
 | `src/ui/components/` | Presentational components — props in, callbacks out, no port/service imports. |
 | `src/ui/containers/` | Binds components to real services via context. |
 | `src/app/` | Composition root: wires adapters to services, providers, top-level `App.tsx`. |
