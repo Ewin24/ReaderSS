@@ -1148,3 +1148,84 @@ html[data-visual="clean"] .add-feed-form__input {
   color: var(--color-text);
   font-weight: 600;
 }
+
+/* ---------------------------------------------------------------------------
+ * FeedSidebar — collections
+ * ------------------------------------------------------------------------- */
+
+.feed-sidebar__group + .feed-sidebar__group {
+  margin-top: 0.75rem;
+}
+
+.feed-sidebar__group-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  /* The heading stays put while a long collection scrolls past it, so it is
+   * always clear which collection the feeds under the cursor belong to. */
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  z-index: 1;
+}
+
+.feed-sidebar__group-count {
+  font-weight: 400;
+}
+
+.feed-sidebar__move-open {
+  font-size: 0.85em;
+}
+
+.feed-sidebar__move {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-bg);
+}
+
+.feed-sidebar__move-label {
+  font-size: 0.75em;
+  color: var(--color-text-muted);
+}
+
+.feed-sidebar__move-select,
+.feed-sidebar__move-new {
+  font: inherit;
+  font-size: 0.85em;
+  width: 100%;
+  min-width: 0;
+  padding: 0.2rem 0.3rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.feed-sidebar__move-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.feed-sidebar__move-actions button {
+  font-size: 0.8em;
+}
+
+.feed-sidebar__move-error {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-text);
+}

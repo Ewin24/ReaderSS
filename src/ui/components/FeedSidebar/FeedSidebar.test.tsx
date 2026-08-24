@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/preact";
-import { FeedSidebar } from "./FeedSidebar";
+import { FeedSidebar, type FeedSidebarItem } from "./FeedSidebar";
 
 const feeds = [
   { id: "feed-1", title: "Hacker News", folder: null, unreadCount: 0 },
@@ -77,3 +77,200 @@ describe("FeedSidebar", () => {
     });
   });
 });
+
+function item(
+  id: string,
+  title: string,
+  folder: string | null,
+  unreadCount = 0,
+): FeedSidebarItem {
+  return { id, title, folder, unreadCount };
+}
+
+describe("FeedSidebar — collections", () => {
+  const grouped = [
+    item("a", "Loading Artist", "Comics"),
+    item("b", "Aphyr", "News"),
+    item("c", "Loose feed", null),
+    item("d", "Poorly Drawn Lines", "Comics"),
+  ];
+
+  it("renders one labelled list per collection, ungrouped last", () => {
+    render(<FeedSidebar feeds={grouped} selectedFeedId={null} onSelectFeed={vi.fn()} />);
+
+    const lists = screen.getAllByRole("list");
+    expect(lists).toHaveLength(3);
+    expect(screen.getByRole("list", { name: "Comics" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "News" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "No collection" })).toBeInTheDocument();
+  });
+
+  it("orders named collections alphabetically and puts the ungrouped pile at the end", () => {
+    render(<FeedSidebar feeds={grouped} selectedFeedId={null} onSelectFeed={vi.fn()} />);
+
+    const headings = screen.getAllByRole("heading").map((node) => node.textContent);
+    expect(headings[0]).toContain("Comics");
+    expect(headings[1]).toContain("News");
+    expect(headings[2]).toContain("No collection");
+  });
+
+  it("shows how many feeds each collection holds", () => {
+    render(<FeedSidebar feeds={grouped} selectedFeedId={null} onSelectFeed={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: /comics/i }).textContent).toContain("2");
+  });
+
+  it("shows NO headings for a flat list, the common OPML shape", () => {
+    // Labelling the whole sidebar "No collection" would announce a
+    // distinction that does not exist yet.
+    render(
+      <FeedSidebar
+        feeds={[item("a", "One", null), item("b", "Two", null)]}
+        selectedFeedId={null}
+        onSelectFeed={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("list")).toHaveLength(1);
+  });
+
+  it("still renders every feed exactly once when grouped", () => {
+    render(<FeedSidebar feeds={grouped} selectedFeedId={null} onSelectFeed={vi.fn()} />);
+
+    for (const feed of grouped) {
+      expect(screen.getByRole("button", { name: new RegExp(`^${feed.title},`, "i") })).toBeInTheDocument();
+    }
+  });
+});
+
+describe("FeedSidebar — moving a feed into a collection", () => {
+  const feeds = [
+    item("a", "Loose feed", null),
+    item("b", "Filed feed", "Comics"),
+    item("c", "Other filed", "News"),
+  ];
+
+  function renderSidebar(onMoveFeed = vi.fn()) {
+    render(
+      <FeedSidebar
+        feeds={feeds}
+        selectedFeedId={null}
+        onSelectFeed={vi.fn()}
+        onMoveFeed={onMoveFeed}
+      />,
+    );
+    return onMoveFeed;
+  }
+
+  function openMoveFor(title: string) {
+    fireEvent.click(screen.getByRole("button", { name: `Move ${title} to a collection` }));
+  }
+
+  it("renders no move control at all when no handler is supplied", () => {
+    render(<FeedSidebar feeds={feeds} selectedFeedId={null} onSelectFeed={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: /move .* to a collection/i })).not.toBeInTheDocument();
+  });
+
+  it("lists the collections that currently exist, plus none and new", () => {
+    renderSidebar();
+    openMoveFor("Loose feed");
+
+    const options = screen.getAllByRole("option").map((node) => node.textContent);
+    expect(options).toEqual(["No collection", "Comics", "News", "New collection…"]);
+  });
+
+  it("files an ungrouped feed into an existing collection", () => {
+    const onMoveFeed = renderSidebar();
+    openMoveFor("Loose feed");
+
+    fireEvent.change(screen.getByLabelText(/collection for loose feed/i), {
+      target: { value: "Comics" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onMoveFeed).toHaveBeenCalledWith("a", "Comics");
+  });
+
+  it("creates a new collection from a typed name", () => {
+    const onMoveFeed = renderSidebar();
+    openMoveFor("Loose feed");
+
+    fireEvent.change(screen.getByLabelText(/collection for loose feed/i), {
+      target: { value: "__new__" },
+    });
+    fireEvent.input(screen.getByLabelText(/new collection name/i), {
+      target: { value: "  Reading  " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    // Trimming is the service's job; the component passes what was typed.
+    expect(onMoveFeed).toHaveBeenCalledWith("a", "  Reading  ");
+  });
+
+  it("refuses to save a new collection with a blank name", () => {
+    const onMoveFeed = renderSidebar();
+    openMoveFor("Loose feed");
+
+    fireEvent.change(screen.getByLabelText(/collection for loose feed/i), {
+      target: { value: "__new__" },
+    });
+    fireEvent.input(screen.getByLabelText(/new collection name/i), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    // Saving blank would silently mean "no collection", which is not what
+    // someone who just chose "New collection" asked for.
+    expect(onMoveFeed).not.toHaveBeenCalled();
+  });
+
+  it("takes a filed feed back out of its collection", () => {
+    const onMoveFeed = renderSidebar();
+    openMoveFor("Filed feed");
+
+    fireEvent.change(screen.getByLabelText(/collection for filed feed/i), {
+      target: { value: "__none__" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onMoveFeed).toHaveBeenCalledWith("b", null);
+  });
+
+  it("preselects the feed's current collection", () => {
+    renderSidebar();
+    openMoveFor("Filed feed");
+
+    expect(screen.getByLabelText(/collection for filed feed/i)).toHaveValue("Comics");
+  });
+
+  it("emits nothing on cancel and closes the picker", () => {
+    const onMoveFeed = renderSidebar();
+    openMoveFor("Loose feed");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onMoveFeed).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText(/collection for loose feed/i)).not.toBeInTheDocument();
+  });
+
+  it("closes the remove confirmation when the move picker opens", () => {
+    // Two inline panels on one row at once would be a mess to read.
+    render(
+      <FeedSidebar
+        feeds={feeds}
+        selectedFeedId={null}
+        onSelectFeed={vi.fn()}
+        onMoveFeed={vi.fn()}
+        onRemoveFeed={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove Loose feed" }));
+    expect(screen.getByRole("button", { name: /confirm removal/i })).toBeInTheDocument();
+
+    openMoveFor("Loose feed");
+
+    expect(screen.queryByRole("button", { name: /confirm removal/i })).not.toBeInTheDocument();
+  });
+});
+

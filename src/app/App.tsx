@@ -463,6 +463,18 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     [usingOverride],
   );
 
+  /** Keeps App's own copy of the feed list in step when the sidebar files a
+   * feed into a collection. Same single-owner rule as `handleNoteSaved`. */
+  const handleFeedMoved = useCallback(
+    (feedId: string, folder: string | null) => {
+      if (usingOverride) return;
+      setStoreFeeds((current) =>
+        current.map((feed) => (feed.id === feedId ? { ...feed, folder } : feed)),
+      );
+    },
+    [usingOverride],
+  );
+
   /**
    * An OPML import adds feeds in bulk. Unlike a single subscribe it does NOT
    * select anything: picking one of forty imported feeds for the user would be
@@ -645,6 +657,7 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
           onSelectFeed={handleSelectFeed}
           refreshSignal={feedSidebarSignal}
           onFeedRemoved={handleFeedRemoved}
+          onFeedMoved={handleFeedMoved}
         />
       )}
       {showList && entryListArea}
