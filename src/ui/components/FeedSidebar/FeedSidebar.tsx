@@ -46,6 +46,11 @@ const NEW_COLLECTION = "__new__";
 /** Heading shown over feeds that are in no collection. */
 export const UNGROUPED_LABEL = "No collection";
 
+/** A stable DOM id per collection, for the heading's `aria-controls`. */
+function listIdFor(label: string): string {
+  return `feed-collection-${label.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}`;
+}
+
 interface MoveFormProps {
   feed: FeedSidebarItem;
   collections: readonly string[];
@@ -124,6 +129,27 @@ export function FeedSidebar({
 }: FeedSidebarProps) {
   const [confirmingFeedId, setConfirmingFeedId] = useState<string | null>(null);
   const [movingFeedId, setMovingFeedId] = useState<string | null>(null);
+  /**
+   * Which collections are collapsed, by name. Stores the COLLAPSED ones, not
+   * the expanded ones, so a collection that appears later (imported, or
+   * created by filing a feed) starts open — the default is "you can see your
+   * feeds", and nothing has to be registered here to be visible.
+   *
+   * Session-scoped, ephemeral UI state, deliberately kept here rather than
+   * persisted: it is the same kind of state as which row is mid-confirmation.
+   * A reload starts with everything expanded.
+   */
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+
+  function toggleCollapsed(label: string) {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
+
   const groups = groupFeedsByFolder(feeds);
   const collections = collectionNames(feeds);
   // A flat subscription list -- the most common OPML shape, and where every
@@ -227,21 +253,61 @@ export function FeedSidebar({
       ) : (
         groups.map((group) => {
           const label = group.folder ?? UNGROUPED_LABEL;
+          const listId = listIdFor(label);
+          // A flat list has no headings, so it has nothing to collapse with:
+          // it can never be hidden behind a control that is not rendered.
+          const isCollapsed = showHeadings && collapsed.has(label);
+          const unread = group.feeds.reduce((total, feed) => total + feed.unreadCount, 0);
 
           return (
             <div class="feed-sidebar__group" key={label}>
               {showHeadings && (
-                <h2 class="feed-sidebar__group-title">
-                  {label}
-                  <span class="feed-sidebar__group-count" aria-hidden="true">
-                    {group.feeds.length}
-                  </span>
+                // Named explicitly: every child below is either a control or
+                // `aria-hidden`, so name-from-content leaves the heading
+                // ANONYMOUS -- and an unnamed heading is invisible to the
+                // heading-navigation a screen-reader user would jump between
+                // collections with. Found by a test asserting the heading by
+                // name, not by inspection.
+                <h2 class="feed-sidebar__group-title" aria-label={label}>
+                  <button
+                    type="button"
+                    class="feed-sidebar__group-toggle"
+                    aria-expanded={!isCollapsed}
+                    aria-controls={listId}
+                    // Both numbers, always, for assistive technology: the
+                    // visible badge shows only one of them to keep a 220px
+                    // column readable.
+                    aria-label={`${label}, ${group.feeds.length} feeds, ${unread} unread`}
+                    onClick={() => toggleCollapsed(label)}
+                  >
+                    <span class="feed-sidebar__group-caret" aria-hidden="true">
+                      {isCollapsed ? "▸" : "▾"}
+                    </span>
+                    <span class="feed-sidebar__group-name" aria-hidden="true">
+                      {label}
+                    </span>
+                    {/* Unread beats feed count when there is any: collapsed is
+                      * exactly when you cannot see the per-feed badges, and
+                      * "is there anything new in here" is the question that
+                      * decides whether to open it. */}
+                    <span class="feed-sidebar__group-count" aria-hidden="true">
+                      {unread > 0 ? unread : group.feeds.length}
+                    </span>
+                  </button>
                 </h2>
               )}
               {/* Each collection is its own list, named for assistive
                 * technology, so "which collection am I in" is answerable
-                * without reading back up the page. */}
-              <ul class="feed-sidebar__list" aria-label={showHeadings ? label : undefined}>
+                * without reading back up the page. Collapsed lists stay in the
+                * DOM but `hidden`, which is what keeps `aria-controls`
+                * pointing at something real and takes them out of the
+                * accessibility tree at the same time. */}
+              <ul
+                id={listId}
+                class="feed-sidebar__list"
+                aria-label={showHeadings ? label : undefined}
+                hidden={isCollapsed}
+              >
                 {group.feeds.map(renderFeed)}
               </ul>
             </div>

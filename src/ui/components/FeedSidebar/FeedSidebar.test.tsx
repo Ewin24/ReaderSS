@@ -274,3 +274,128 @@ describe("FeedSidebar — moving a feed into a collection", () => {
   });
 });
 
+describe("FeedSidebar — collapsing collections", () => {
+  const feeds = [
+    item("a", "Loading Artist", "Comics", 3),
+    item("b", "Poorly Drawn Lines", "Comics", 0),
+    item("c", "Aphyr", "News", 0),
+    item("d", "Loose feed", null, 0),
+  ];
+
+  function renderSidebar() {
+    render(<FeedSidebar feeds={feeds} selectedFeedId={null} onSelectFeed={vi.fn()} />);
+  }
+
+  function toggleFor(name: RegExp) {
+    return screen.getByRole("button", { name });
+  }
+
+  it("starts with every collection expanded", () => {
+    renderSidebar();
+
+    expect(toggleFor(/^comics,/i)).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("list", { name: "Comics" })).toBeInTheDocument();
+  });
+
+  it("hides a collection's feeds when collapsed, and brings them back", () => {
+    renderSidebar();
+
+    fireEvent.click(toggleFor(/^comics,/i));
+
+    expect(toggleFor(/^comics,/i)).toHaveAttribute("aria-expanded", "false");
+    // Out of the accessibility tree entirely, not merely off screen.
+    expect(screen.queryByRole("list", { name: "Comics" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^loading artist,/i })).not.toBeInTheDocument();
+
+    fireEvent.click(toggleFor(/^comics,/i));
+
+    expect(screen.getByRole("list", { name: "Comics" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^loading artist,/i })).toBeInTheDocument();
+  });
+
+  it("collapses only the collection you clicked", () => {
+    renderSidebar();
+
+    fireEvent.click(toggleFor(/^comics,/i));
+
+    expect(screen.getByRole("list", { name: "News" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "No collection" })).toBeInTheDocument();
+  });
+
+  it("can collapse the ungrouped pile too", () => {
+    renderSidebar();
+
+    fireEvent.click(toggleFor(/^no collection,/i));
+
+    expect(screen.queryByRole("list", { name: "No collection" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the heading, and its unread count, visible while collapsed", () => {
+    // The whole point of collapsing is to still know where the new things
+    // are without expanding each collection to look.
+    renderSidebar();
+
+    fireEvent.click(toggleFor(/^comics,/i));
+
+    const heading = screen.getByRole("heading", { name: "Comics" });
+    expect(heading).toBeInTheDocument();
+    expect(heading.textContent).toContain("3");
+  });
+
+  it("falls back to the feed count when a collection has nothing unread", () => {
+    renderSidebar();
+
+    expect(screen.getByRole("heading", { name: "News" }).textContent).toContain("1");
+  });
+
+  it("names each heading, so heading navigation can reach it", () => {
+    // A heading whose children are all controls or aria-hidden computes an
+    // EMPTY name, which makes it useless for jumping between collections.
+    renderSidebar();
+
+    expect(screen.getByRole("heading", { name: "Comics" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "News" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "No collection" })).toBeInTheDocument();
+  });
+
+  it("announces both counts to assistive technology, not just the visible one", () => {
+    renderSidebar();
+
+    expect(toggleFor(/^comics,/i)).toHaveAccessibleName("Comics, 2 feeds, 3 unread");
+  });
+
+  it("offers no collapse control for a flat list, which has no headings", () => {
+    render(
+      <FeedSidebar
+        feeds={[item("a", "One", null), item("b", "Two", null)]}
+        selectedFeedId={null}
+        onSelectFeed={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+    // Nothing can be hidden behind a control that does not exist.
+    expect(screen.getByRole("list")).toBeInTheDocument();
+  });
+
+  it("keeps a newly appearing collection expanded", () => {
+    // Collapsed names are tracked, not expanded ones, so a collection that
+    // shows up later (imported, or created by filing a feed) starts open.
+    const { rerender } = render(
+      <FeedSidebar feeds={feeds} selectedFeedId={null} onSelectFeed={vi.fn()} />,
+    );
+    fireEvent.click(toggleFor(/^comics,/i));
+
+    rerender(
+      <FeedSidebar
+        feeds={[...feeds, item("e", "New one", "Reading")]}
+        selectedFeedId={null}
+        onSelectFeed={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("list", { name: "Reading" })).toBeInTheDocument();
+    // ...and the one you collapsed stays collapsed.
+    expect(screen.queryByRole("list", { name: "Comics" })).not.toBeInTheDocument();
+  });
+});

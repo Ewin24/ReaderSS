@@ -1229,3 +1229,32 @@ html[data-visual="clean"] .add-feed-form__input {
   border-left: 3px solid var(--color-accent);
   color: var(--color-text);
 }
+
+/* The heading is now a full-width toggle. Its own padding moves onto the
+ * button so the whole strip is clickable, not just the words. */
+.feed-sidebar__group-title {
+  padding: 0;
+}
+
+.feed-sidebar__group-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.feed-sidebar__group-caret {
+  flex: 0 0 auto;
+  font-size: 0.9em;
+}
+
+.feed-sidebar__group-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
