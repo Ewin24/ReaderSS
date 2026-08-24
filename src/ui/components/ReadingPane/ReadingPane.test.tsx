@@ -317,3 +317,57 @@ describe("ReadingPane", () => {
     });
   });
 });
+
+/**
+ * The page size used to COUNT pages lives in `App` (measured from the pane's
+ * height by `useViewportPageSize`); the page size used to SLICE them lives
+ * here. They were two different numbers -- App counted by the measured size
+ * while the pane sliced by the hard-coded `CONTENT_PAGE_SIZE` -- so page 1
+ * rendered the wrong number of blocks and the trailing pages came out empty.
+ * `blocksPerPage` is the prop that keeps them the same number.
+ */
+describe("ReadingPane — content page size", () => {
+  function manyParagraphs(count: number): string {
+    return Array.from({ length: count }, (_, i) => `<p>Block ${i + 1}</p>`).join("");
+  }
+
+  it("slices by the supplied blocksPerPage, not by CONTENT_PAGE_SIZE", () => {
+    const perPage = 3;
+    expect(perPage).not.toBe(CONTENT_PAGE_SIZE); // guards the premise
+
+    renderReadingPane({
+      entry: { ...baseEntry, summary: null, content: manyParagraphs(9) },
+      page: 1,
+      pageCount: 3,
+      blocksPerPage: perPage,
+    });
+
+    expect(screen.getByText("Block 3")).toBeInTheDocument();
+    expect(screen.queryByText("Block 4")).not.toBeInTheDocument();
+  });
+
+  it("slices the correct window on a later page under a supplied blocksPerPage", () => {
+    renderReadingPane({
+      entry: { ...baseEntry, summary: null, content: manyParagraphs(9) },
+      page: 2,
+      pageCount: 3,
+      blocksPerPage: 3,
+    });
+
+    expect(screen.getByText("Block 4")).toBeInTheDocument();
+    expect(screen.getByText("Block 6")).toBeInTheDocument();
+    expect(screen.queryByText("Block 3")).not.toBeInTheDocument();
+    expect(screen.queryByText("Block 7")).not.toBeInTheDocument();
+  });
+
+  it("falls back to CONTENT_PAGE_SIZE when no blocksPerPage is supplied", () => {
+    renderReadingPane({
+      entry: { ...baseEntry, summary: null, content: manyParagraphs(CONTENT_PAGE_SIZE * 2) },
+      page: 1,
+      pageCount: 2,
+    });
+
+    expect(screen.getByText(`Block ${CONTENT_PAGE_SIZE}`)).toBeInTheDocument();
+    expect(screen.queryByText(`Block ${CONTENT_PAGE_SIZE + 1}`)).not.toBeInTheDocument();
+  });
+});

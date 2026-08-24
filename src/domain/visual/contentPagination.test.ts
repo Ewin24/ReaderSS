@@ -158,3 +158,65 @@ describe("round-trip invariant: split then rejoin every page preserves the clean
     expect(blocks.join("")).toBe(html);
   });
 });
+
+/**
+ * Real-world regression suite. The original scanner treated EVERY nested
+ * opening tag as depth-increasing, so a void element with no closing tag
+ * (`<br>`, `<img>`) inside a block consumed that block's own closing tag as
+ * if it were the nested close. The block then never closed, the whole body
+ * was flagged malformed, and `splitTopLevelHtmlBlocks` degraded to one
+ * block -- silently disabling content pagination for practically every real
+ * article, since inline images and line breaks are ubiquitous in feeds.
+ *
+ * The wrapper case is the same failure from the other direction: a body
+ * whose paragraphs all live inside one `<div>`/`<article>` wrapper is a
+ * single top-level block by definition, so it also never paginated.
+ */
+describe("splitTopLevelHtmlBlocks — real-world feed markup", () => {
+  it("does not let a void <br> inside a block swallow that block's close", () => {
+    const html = "<p>a<br>b</p><p>c</p><p>d</p>";
+    expect(splitTopLevelHtmlBlocks(html)).toEqual(["<p>a<br>b</p>", "<p>c</p>", "<p>d</p>"]);
+  });
+
+  it("does not let a void <img> inside a block swallow that block's close", () => {
+    const html = '<p>a<img src="https://e.test/x.png">b</p><p>c</p>';
+    expect(splitTopLevelHtmlBlocks(html)).toEqual([
+      '<p>a<img src="https://e.test/x.png">b</p>',
+      "<p>c</p>",
+    ]);
+  });
+
+  it("handles every HTML void element nested inside a block", () => {
+    const html = "<p>a<wbr>b<hr>c</p><p>d</p>";
+    expect(splitTopLevelHtmlBlocks(html)).toEqual(["<p>a<wbr>b<hr>c</p>", "<p>d</p>"]);
+  });
+
+  it("unwraps a single container wrapper so its children become the blocks", () => {
+    const html = "<div><p>a</p><p>b</p><p>c</p></div>";
+    expect(splitTopLevelHtmlBlocks(html)).toEqual(["<p>a</p>", "<p>b</p>", "<p>c</p>"]);
+  });
+
+  it("unwraps nested single wrappers down to the first branching level", () => {
+    const html = "<article><div><p>a</p><p>b</p></div></article>";
+    expect(splitTopLevelHtmlBlocks(html)).toEqual(["<p>a</p>", "<p>b</p>"]);
+  });
+
+  it("does not unwrap a wrapper whose content is a single non-block node", () => {
+    // Nothing to gain: unwrapping would still yield one block, and the
+    // wrapper may carry meaningful semantics/styling.
+    const html = "<blockquote>just text</blockquote>";
+    expect(splitTopLevelHtmlBlocks(html)).toEqual([html]);
+  });
+
+  it("still degrades to a single block on genuinely unclosed markup", () => {
+    const html = "<p>a</p><div><p>b</p>";
+    expect(splitTopLevelHtmlBlocks(html)).toEqual([html]);
+  });
+
+  it("preserves the round-trip invariant through unwrapping", () => {
+    const html = "<div><p>a<br>b</p><p>c</p><p>d</p></div>";
+    const blocks = splitTopLevelHtmlBlocks(html);
+    expect(blocks.length).toBeGreaterThan(1);
+    expect(blocks.join("")).toBe("<p>a<br>b</p><p>c</p><p>d</p>");
+  });
+});

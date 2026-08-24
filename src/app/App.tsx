@@ -533,6 +533,10 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
           onToggleError={handleToggleError}
           page={contentPaginationActive ? clampedContentPage : undefined}
           pageCount={contentPaginationActive ? contentPageCountValue : undefined}
+          // Same size used to derive `contentPageCountValue` above: counting
+          // and slicing must agree, or the pane renders the wrong slice and
+          // the trailing pages come out empty.
+          blocksPerPage={contentPaginationActive ? contentBlocksPerPage : undefined}
           onPrevPage={
             contentPaginationActive
               ? () => setContentPage((p) => clampPage(p - 1, contentPageCountValue))
