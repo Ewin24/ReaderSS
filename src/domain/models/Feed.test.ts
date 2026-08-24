@@ -27,6 +27,7 @@ describe("createFeed", () => {
       lastError: null,
       addedAt: "2026-08-19T10:00:00.000Z",
       unstableGuid: 0,
+      note: null,
     });
   });
 

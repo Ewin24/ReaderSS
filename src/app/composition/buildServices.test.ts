@@ -36,11 +36,44 @@ describe("buildServices", () => {
       lastError: null,
       addedAt: "2026-08-19T00:00:00.000Z",
       unstableGuid: 0 as const,
+      note: null,
     };
 
     await services.localStore.putFeed(feed);
 
     await expect(services.localStore.getFeed(feed.id)).resolves.toEqual(feed);
+  });
+
+  it("reads back a feed stored before `note` existed as one with a null note", async () => {
+    const { services } = await buildServices();
+    // Written the way a pre-`note` build wrote it: the field simply is not
+    // there. `Feed` declares `note: string | null`, and the store adapter is
+    // what keeps that true without a schema migration.
+    const legacyRecord = {
+      id: "https://legacy.example.com/feed",
+      url: "https://legacy.example.com/feed",
+      normalizedUrl: "https://legacy.example.com/feed",
+      title: "Legacy Feed",
+      siteUrl: null,
+      folder: null,
+      etag: null,
+      lastModified: null,
+      lastFetchedAt: null,
+      lastSuccessAt: null,
+      lastError: null,
+      addedAt: "2026-08-19T00:00:00.000Z",
+      unstableGuid: 0 as const,
+    };
+
+    await services.localStore.putFeed(legacyRecord as unknown as Parameters<
+      typeof services.localStore.putFeed
+    >[0]);
+
+    const readBack = await services.localStore.getFeed(legacyRecord.id);
+    expect(readBack?.note).toBeNull();
+
+    const listed = await services.localStore.listFeeds();
+    expect(listed.every((entry) => entry.note !== undefined)).toBe(true);
   });
 
   it("wires clock.now() to a real, parseable ISO timestamp (not a fixed stub value)", async () => {

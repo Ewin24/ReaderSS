@@ -1,3 +1,4 @@
+import type { Feed } from "../../domain/models/Feed";
 import type { Entry } from "../../domain/models/Entry";
 import type { LocalStorePort } from "../../ports/LocalStorePort";
 import type { ReaderSSDatabase } from "./schema";
@@ -34,6 +35,26 @@ function assertValidEntryState(entry: Entry): void {
 }
 
 /**
+ * Fills in fields added to `Feed` after records were already on disk.
+ *
+ * `Feed.note` arrived without a `DB_VERSION` bump, on purpose: IndexedDB
+ * stores whatever object it is given, so an added plain field (no new index)
+ * needs no migration -- older records simply lack it. Normalizing HERE, at the
+ * single point where a raw record enters the app, is what keeps `Feed`'s type
+ * honest instead of quietly `undefined` everywhere upstream.
+ *
+ * A migration would have meant rewriting every feed row to add one null.
+ */
+function fromRecord(feed: Feed | undefined): Feed | undefined {
+  if (feed === undefined) return undefined;
+  return { ...feed, note: feed.note ?? null };
+}
+
+function fromRecords(feeds: readonly Feed[]): Feed[] {
+  return feeds.map((feed) => ({ ...feed, note: feed.note ?? null }));
+}
+
+/**
  * `idb`-backed implementation of {@link LocalStorePort}. Takes an
  * already-open database so `schema.ts` remains the only module
  * responsible for opening, creating, and migrating it.
@@ -41,13 +62,13 @@ function assertValidEntryState(entry: Entry): void {
 export function createIdbLocalStore(db: ReaderSSDatabase): LocalStorePort {
   return {
     async getFeed(id) {
-      return db.get("feeds", id);
+      return fromRecord(await db.get("feeds", id));
     },
     async listFeeds() {
-      return db.getAll("feeds");
+      return fromRecords(await db.getAll("feeds"));
     },
     async listFeedsByFolder(folder) {
-      return db.getAllFromIndex("feeds", "by-folder", folder);
+      return fromRecords(await db.getAllFromIndex("feeds", "by-folder", folder));
     },
     async putFeed(feed) {
       await db.put("feeds", feed);

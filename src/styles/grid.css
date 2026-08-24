@@ -50,11 +50,15 @@ body {
 .app-shell {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto auto 1fr 1fr;
+  /* One `auto` row per non-pane child (toggle-error, actions, settings,
+   * feed-note), then the two pane rows. `auto` means each collapses to
+   * nothing when its child renders nothing. */
+  grid-template-rows: auto auto auto auto 1fr 1fr;
   grid-template-areas:
     "toggle-error"
     "actions"
     "settings"
+    "feed-note"
     "sidebar"
     "pane";
   /* HEIGHT-BOUNDED ON PURPOSE (was `min-height: 100vh`).
@@ -93,6 +97,14 @@ body {
 
 .app-shell__settings[hidden] {
   display: none;
+}
+
+/* Your own note about the selected feed, full width above the panes: it is
+ * about the whole feed, not about any one entry, so it does not belong inside
+ * either the list or the reading pane. Its row is `auto`, so it takes no space
+ * at all when no feed is selected and the container renders nothing. */
+.app-shell__feed-note {
+  grid-area: feed-note;
 }
 
 .feed-sidebar {
@@ -169,11 +181,12 @@ body {
 @media (min-width: 768px) {
   .app-shell {
     grid-template-columns: 220px 320px 1fr;
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto 1fr;
     grid-template-areas:
       "toggle-error toggle-error toggle-error"
       "actions actions actions"
       "settings settings settings"
+      "feed-note feed-note feed-note"
       "sidebar list pane";
   }
 

@@ -18,6 +18,7 @@ import { EntryListContainer } from "../ui/containers/EntryListContainer";
 import { ReadingPaneContainer } from "../ui/containers/ReadingPaneContainer";
 import { FeedSidebarContainer } from "../ui/containers/FeedSidebarContainer";
 import { AddFeedContainer } from "../ui/containers/AddFeedContainer";
+import { FeedNoteContainer } from "../ui/containers/FeedNoteContainer";
 import { RefreshContainer } from "../ui/containers/RefreshContainer";
 import type { ReadingPaneEntry } from "../ui/components/ReadingPane";
 import { DESKTOP_QUERY, useMediaQuery } from "./useMediaQuery";
@@ -58,8 +59,13 @@ interface LoadState {
 const LOADED: LoadState = { status: "loaded" };
 
 
-function toAppFeed(feed: { id: string; title: string; folder: string | null }): AppFeed {
-  return { id: feed.id, title: feed.title, folder: feed.folder };
+function toAppFeed(feed: {
+  id: string;
+  title: string;
+  folder: string | null;
+  note: string | null;
+}): AppFeed {
+  return { id: feed.id, title: feed.title, folder: feed.folder, note: feed.note };
 }
 
 function toAppEntry(entry: {
@@ -437,6 +443,25 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     setToggleErrorMessage(message);
   }, []);
 
+  /**
+   * The feed list is the single owner of a note's value; `FeedNoteContainer`
+   * reports the saved text back here instead of keeping its own copy, so the
+   * two can never drift.
+   *
+   * The override path is left alone on purpose: it renders exactly the data a
+   * test handed in, and quietly rewriting that data would make the override
+   * lie about what it was given.
+   */
+  const handleNoteSaved = useCallback(
+    (feedId: string, note: string | null) => {
+      if (usingOverride) return;
+      setStoreFeeds((current) =>
+        current.map((feed) => (feed.id === feedId ? { ...feed, note } : feed)),
+      );
+    },
+    [usingOverride],
+  );
+
   // A newly subscribed feed must appear in the feed list without a page
   // reload, and is also selected immediately, so its entries are visible
   // without an extra click.
@@ -577,6 +602,18 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
         hidden={!settingsOpen}
       >
         <SettingsPanel settings={settings} onUpdateSettings={updateSettings} />
+      </div>
+      {/* Its own full-width row (see grid.css's placement contract): the note
+        * is about the whole feed, so it belongs above the panes rather than
+        * inside the list or the reading pane. Renders nothing at all when no
+        * feed is selected, and the row is `auto`, so it costs no space. */}
+      <div class="app-shell__feed-note">
+        <FeedNoteContainer
+          feedId={selectedFeedId}
+          feedTitle={selectedFeed?.title ?? null}
+          note={selectedFeed?.note ?? null}
+          onNoteSaved={handleNoteSaved}
+        />
       </div>
       {usingOverride ? (
         <FeedSidebar

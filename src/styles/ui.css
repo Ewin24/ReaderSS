@@ -983,3 +983,86 @@ html[data-visual="clean"] .add-feed-form__input {
   border-radius: 6px;
   transition: all 0.15s ease;
 }
+
+/* ---------------------------------------------------------------------------
+ * FeedNote
+ *
+ * Full-width row above the panes. Collapsed to a single control until there
+ * is something to show, so it never competes with the entry list for space.
+ * ------------------------------------------------------------------------- */
+
+.feed-note {
+  padding: 0.5rem 1rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+}
+
+.feed-note__view {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* The note is the reader's own writing, rendered as plain text. `pre-wrap` is
+ * what keeps the line breaks they typed, without the note ever becoming an
+ * HTML sink. */
+.feed-note__text {
+  margin: 0;
+  flex: 1 1 20rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9em;
+  /* A long note must not push the panes off screen: it scrolls in place. */
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.feed-note__add,
+.feed-note__edit {
+  font-size: 0.85em;
+}
+
+.feed-note__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.feed-note__label {
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.feed-note__input {
+  font: inherit;
+  font-size: 0.9em;
+  width: 100%;
+  max-width: 60ch;
+  padding: 0.35rem 0.5rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  resize: vertical;
+}
+
+.feed-note__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feed-note__hint,
+.feed-note__error {
+  margin: 0;
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+}
+
+.feed-note__error {
+  color: var(--color-text);
+  font-weight: 600;
+}

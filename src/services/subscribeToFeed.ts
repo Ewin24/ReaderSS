@@ -41,6 +41,12 @@ import type { LocalStorePort } from "../ports/LocalStorePort";
 export interface SubscribeToFeedInput {
   readonly url: string;
   readonly folder?: string | null;
+  /**
+   * A starting note for the feed, used by the OPML import to carry a
+   * `description` across. Nothing in the fetch/parse path ever supplies this:
+   * a note is the reader's own text, never the publisher's.
+   */
+  readonly note?: string | null;
 }
 
 export interface SubscribeToFeedDeps {
@@ -134,6 +140,7 @@ export async function subscribeToFeed(
       title: parseResult.feed.title,
       siteUrl: parseResult.feed.siteUrl,
       folder: input.folder ?? null,
+      note: input.note ?? null,
       addedAt: now,
     }),
     etag: fetchResult.etag,

@@ -17,6 +17,20 @@ export interface Feed {
   lastError: FeedError | null;
   addedAt: string;
   unstableGuid: 0 | 1;
+  /**
+   * Your own note about this feed -- why you subscribed, what you want out of
+   * it, what to ignore. Written by you, never by the feed: nothing in the
+   * fetch/parse path ever sets it, so a refresh can never overwrite it.
+   *
+   * Round-trips through OPML as the standard `description` attribute, which
+   * is what makes it survive an export/import cycle and travel to other
+   * readers.
+   *
+   * Feeds stored before this field existed have no `note` on disk. The store
+   * adapter fills it in as `null` on read (see `idbLocalStore.ts`), so this
+   * type stays true without a schema migration.
+   */
+  note: string | null;
 }
 
 export interface CreateFeedInput {
@@ -27,6 +41,7 @@ export interface CreateFeedInput {
   siteUrl?: string | null;
   folder?: string | null;
   addedAt: string;
+  note?: string | null;
 }
 
 export function createFeed(input: CreateFeedInput): Feed {
@@ -44,5 +59,6 @@ export function createFeed(input: CreateFeedInput): Feed {
     lastError: null,
     addedAt: input.addedAt,
     unstableGuid: 0,
+    note: input.note ?? null,
   };
 }
