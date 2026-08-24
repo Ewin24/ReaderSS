@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
 import { useServices } from "../../app/providers/ServicesContext";
 import { describeError } from "../../domain/errors/describeError";
+import { setFeedFolder } from "../../services/setFeedFolder";
 import { FeedSidebar, type FeedSidebarItem } from "../components/FeedSidebar";
 
 export interface FeedSidebarContainerProps {
@@ -50,6 +51,12 @@ export interface FeedSidebarContainerProps {
    * confirmed: removal is confirmed before it happens.
    */
   onFeedRemoved?: (feedId: string) => void;
+  /**
+   * Called after a feed's collection is successfully changed, so a parent can
+   * keep its own copy of the feed list in step (`App.tsx` holds one for the
+   * entry list and the note row).
+   */
+  onFeedMoved?: (feedId: string, folder: string | null) => void;
 }
 
 type LoadState = "loading" | "loaded" | "error";
@@ -60,6 +67,7 @@ export function FeedSidebarContainer({
   refreshSignal,
   onLoadError,
   onFeedRemoved,
+  onFeedMoved,
 }: FeedSidebarContainerProps) {
   const services = useServices();
   const [items, setItems] = useState<FeedSidebarItem[]>([]);
@@ -70,6 +78,9 @@ export function FeedSidebarContainer({
   // otherwise successfully loaded list, just surface its own message
   // alongside it.
   const [removeErrorMessage, setRemoveErrorMessage] = useState<string | null>(null);
+  /** Same rationale as `removeErrorMessage`: a failed move must not blow away
+   * an otherwise good list. */
+  const [moveErrorMessage, setMoveErrorMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoadState("loading");
@@ -104,6 +115,34 @@ export function FeedSidebarContainer({
     // tuple on every render (as `App.tsx`'s `feedSidebarSignal` does) must
     // not cause a re-fetch on every unrelated re-render.
   }, [load, feedListVersion, entryStateVersion]);
+
+  const handleMoveFeed = useCallback(
+    (feedId: string, folder: string | null) => {
+      setMoveErrorMessage(null);
+      setFeedFolder(services, feedId, folder)
+        .then((result) => {
+          if (result.status === "saved") {
+            // Updated in place instead of re-fetching the whole list: the
+            // only thing that changed is one feed's collection, and a reload
+            // would also re-count every feed's unread entries for nothing.
+            setItems((current) =>
+              current.map((item) =>
+                item.id === feedId ? { ...item, folder: result.folder } : item,
+              ),
+            );
+            onFeedMoved?.(feedId, result.folder);
+            return;
+          }
+          setMoveErrorMessage(
+            result.status === "not-found"
+              ? "That feed no longer exists."
+              : result.message,
+          );
+        })
+        .catch((error: unknown) => setMoveErrorMessage(describeError(error)));
+    },
+    [services, onFeedMoved],
+  );
 
   const handleRemoveFeed = useCallback(
     (feedId: string) => {
@@ -143,6 +182,11 @@ export function FeedSidebarContainer({
 
   return (
     <>
+      {moveErrorMessage && (
+        <p class="feed-sidebar__move-error" role="alert">
+          Could not change this feed's collection. {moveErrorMessage}
+        </p>
+      )}
       {removeErrorMessage && (
         <p class="feed-sidebar__remove-error" role="alert">
           Could not remove this feed. {removeErrorMessage}
@@ -153,6 +197,7 @@ export function FeedSidebarContainer({
         selectedFeedId={selectedFeedId}
         onSelectFeed={onSelectFeed}
         onRemoveFeed={handleRemoveFeed}
+        onMoveFeed={handleMoveFeed}
       />
     </>
   );

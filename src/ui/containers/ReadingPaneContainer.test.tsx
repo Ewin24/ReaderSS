@@ -1,3 +1,4 @@
+import { opmlCodecStub } from "../../test/doubles/opmlCodecStub";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { useCallback, useState } from "preact/hooks";
@@ -105,7 +106,7 @@ describe("ReadingPaneContainer", () => {
     const onEntryChanged = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} onEntryChanged={onEntryChanged} />
       </ServicesProvider>,
     );
@@ -123,7 +124,7 @@ describe("ReadingPaneContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
       </ServicesProvider>,
     );
@@ -140,7 +141,7 @@ describe("ReadingPaneContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
       </ServicesProvider>,
     );
@@ -163,7 +164,7 @@ describe("ReadingPaneContainer", () => {
     const onToggleError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <ReadingPaneContainer
           entry={toReadingPaneEntry(entry)}
           onEntryChanged={onEntryChanged}
@@ -186,7 +187,7 @@ describe("ReadingPaneContainer", () => {
     const onToggleError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} onToggleError={onToggleError} />
       </ServicesProvider>,
     );
@@ -203,7 +204,7 @@ describe("ReadingPaneContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <ReadingPaneContainer entry={toReadingPaneEntry(entry)} />
       </ServicesProvider>,
     );
@@ -228,7 +229,7 @@ describe("ReadingPaneContainer", () => {
     });
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <LiveEntryHarness initialEntry={toReadingPaneEntry(entry)} localStore={localStore} />
       </ServicesProvider>,
     );

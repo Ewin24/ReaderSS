@@ -12,6 +12,10 @@ export interface AppFeed {
   id: string;
   title: string;
   folder: string | null;
+  /** The reader's own note about this feed. Optional here, unlike on the
+   * `Feed` domain model, so the test-only override does not have to state it
+   * in every fixture that does not care about notes. */
+  note?: string | null;
 }
 
 export interface AppEntry {

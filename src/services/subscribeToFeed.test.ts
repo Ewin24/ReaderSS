@@ -210,6 +210,7 @@ describe("subscribeToFeed", () => {
       lastError: null,
       addedAt: "2024-01-01T00:00:00.000Z",
       unstableGuid: 0,
+      note: null,
     };
     const localStore = makeLocalStore({ getFeed: vi.fn().mockResolvedValue(existing) });
     const feedSource = makeFeedSource({ status: "error", code: "NETWORK_ERROR", message: "should not be called" });
@@ -248,6 +249,7 @@ describe("subscribeToFeed", () => {
       lastError: null,
       addedAt: "2024-01-01T00:00:00.000Z",
       unstableGuid: 0,
+      note: null,
     };
     const localStore = makeLocalStore({
       getFeed: vi

@@ -1,3 +1,4 @@
+import { feedsmithOpmlCodec } from "../../adapters/opml/feedsmithOpmlCodec";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { within } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
@@ -74,7 +75,13 @@ afterEach(() => {
  */
 describe("bootstrapApp", () => {
   it("renders the app tree into the root element when buildServices resolves", async () => {
-    const services: Services = { localStore: makeLocalStore(), clock, feedSource, feedParser };
+    const services: Services = {
+      localStore: makeLocalStore(),
+      clock,
+      feedSource,
+      feedParser,
+      opmlCodec: feedsmithOpmlCodec,
+    };
     buildServicesMock.mockResolvedValue({ services, sanitize: (html) => html });
     const root = makeAttachedRoot();
 

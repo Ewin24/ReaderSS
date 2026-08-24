@@ -1,3 +1,4 @@
+import { opmlCodecStub } from "../../test/doubles/opmlCodecStub";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
@@ -59,7 +60,7 @@ describe("EntryListContainer", () => {
     const onEntryChanged = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <EntryListContainer
           entries={[
             {
@@ -93,7 +94,7 @@ describe("EntryListContainer", () => {
     const localStore = makeLocalStore(entry);
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <EntryListContainer
           entries={[
             {
@@ -129,7 +130,7 @@ describe("EntryListContainer", () => {
     const onToggleError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <EntryListContainer
           entries={[
             {

@@ -1,0 +1,18 @@
+<opml version="2.0">
+	<head>
+		<title>Kevin Cox's Favourite Feeds</title>
+		<dateCreated>Thu, 29 Feb 2024 23:10:00 +0000</dateCreated>
+		<dateModified>Thu, 29 Feb 2024 23:10:00 +0000</dateModified>
+		<docs>http://opml.org/spec2.opml</docs>
+	</head>
+	<body>
+		<outline text="Comics">
+			<outline text="Loading Artist" type="rss" xmlUrl="https://loadingartist.com/index.xml" title="Loading Artist"/>
+			<outline text="Sarah&apos;s Scribbles" type="rss" xmlUrl="https://sarahcandersen.com/rss" title="Sarah&apos;s Scribbles"/>
+		</outline>
+		<outline text="News &amp; Blogs">
+			<outline text="Aphyr: Posts" type="rss" xmlUrl="https://aphyr.com/posts.atom" title="Aphyr: Posts"/>
+			<outline text="Filippo Valsorda" type="rss" xmlUrl="https://words.filippo.io/rss/" title="Cryptography Dispatches"/>
+		</outline>
+	</body>
+</opml>

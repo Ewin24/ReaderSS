@@ -1,3 +1,4 @@
+import { opmlCodecStub } from "../../test/doubles/opmlCodecStub";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
@@ -78,7 +79,7 @@ describe("FeedSidebarContainer", () => {
     });
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
       </ServicesProvider>,
     );
@@ -104,7 +105,7 @@ describe("FeedSidebarContainer", () => {
     const localStore = makeLocalStore({ listFeeds });
 
     const { rerender } = render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer
           selectedFeedId={null}
           onSelectFeed={vi.fn()}
@@ -120,7 +121,7 @@ describe("FeedSidebarContainer", () => {
     expect(listFeeds).toHaveBeenCalledTimes(1);
 
     rerender(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer
           selectedFeedId={null}
           onSelectFeed={vi.fn()}
@@ -151,7 +152,7 @@ describe("FeedSidebarContainer", () => {
     // `FeedSidebarContainer`'s `useServices()` reference every time and
     // mask the exact thing this test isolates: whether `refreshSignal`'s
     // VALUES, not `services`, drive the re-fetch decision.
-    const services = { localStore, clock, feedSource, feedParser };
+    const services = { localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub };
 
     const { rerender } = render(
       <ServicesProvider services={services}>
@@ -209,7 +210,7 @@ describe("FeedSidebarContainer", () => {
     const localStore = makeLocalStore({ listFeeds });
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
       </ServicesProvider>,
     );
@@ -228,7 +229,7 @@ describe("FeedSidebarContainer", () => {
     const onLoadError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer
           selectedFeedId={null}
           onSelectFeed={vi.fn()}
@@ -256,7 +257,7 @@ describe("FeedSidebarContainer", () => {
       const onFeedRemoved = vi.fn();
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer
             selectedFeedId={null}
             onSelectFeed={vi.fn()}
@@ -269,7 +270,7 @@ describe("FeedSidebarContainer", () => {
 
       expect(localStore.deleteFeed).not.toHaveBeenCalled();
       expect(onFeedRemoved).not.toHaveBeenCalled();
-      expect(screen.getByRole("button", { name: /hacker news/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^hacker news,/i })).toBeInTheDocument();
     });
 
     it("states plainly what removal deletes -- the feed and its saved entries, including starred ones", async () => {
@@ -277,7 +278,7 @@ describe("FeedSidebarContainer", () => {
       const localStore = makeLocalStore({ listFeeds: vi.fn().mockResolvedValue([feed]) });
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
         </ServicesProvider>,
       );
@@ -293,7 +294,7 @@ describe("FeedSidebarContainer", () => {
       const localStore = makeLocalStore({ listFeeds: vi.fn().mockResolvedValue([feed]) });
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
         </ServicesProvider>,
       );
@@ -315,7 +316,7 @@ describe("FeedSidebarContainer", () => {
       const onFeedRemoved = vi.fn();
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer
             selectedFeedId={null}
             onSelectFeed={vi.fn()}
@@ -329,7 +330,7 @@ describe("FeedSidebarContainer", () => {
 
       await waitFor(() => expect(localStore.deleteFeed).toHaveBeenCalledWith(feed.id));
       await waitFor(() =>
-        expect(screen.queryByRole("button", { name: /hacker news/i })).not.toBeInTheDocument(),
+        expect(screen.queryByRole("button", { name: /^hacker news,/i })).not.toBeInTheDocument(),
       );
       expect(onFeedRemoved).toHaveBeenCalledWith(feed.id);
     });
@@ -342,7 +343,7 @@ describe("FeedSidebarContainer", () => {
       });
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
         </ServicesProvider>,
       );
@@ -353,5 +354,85 @@ describe("FeedSidebarContainer", () => {
       expect(await screen.findByText(/indexeddb transaction aborted/i)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /hacker news.*unread/i })).toBeInTheDocument();
     });
+  });
+});
+
+describe("FeedSidebarContainer — moving a feed into a collection", () => {
+  function setup(storeOverrides: Partial<LocalStorePort> = {}, onFeedMoved = vi.fn()) {
+    const feed = makeFeed({ id: "feed-1", title: "Hacker News", folder: null });
+    const localStore = makeLocalStore({
+      listFeeds: vi.fn().mockResolvedValue([feed]),
+      getFeed: vi.fn().mockResolvedValue(feed),
+      putFeed: vi.fn().mockResolvedValue(undefined),
+      ...storeOverrides,
+    });
+
+    render(
+      <ServicesProvider
+        services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}
+      >
+        <FeedSidebarContainer
+          selectedFeedId={null}
+          onSelectFeed={vi.fn()}
+          onFeedMoved={onFeedMoved}
+        />
+      </ServicesProvider>,
+    );
+    return { localStore, onFeedMoved };
+  }
+
+  async function fileIntoNewCollection(name: string) {
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Move Hacker News to a collection" }),
+    );
+    fireEvent.change(screen.getByLabelText(/collection for hacker news/i), {
+      target: { value: "__new__" },
+    });
+    fireEvent.input(screen.getByLabelText(/new collection name/i), { target: { value: name } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  }
+
+  it("writes the collection through the real service and reports it up", async () => {
+    const { localStore, onFeedMoved } = setup();
+
+    await fileIntoNewCollection("Comics");
+
+    await waitFor(() =>
+      expect(localStore.putFeed).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "feed-1", folder: "Comics" }),
+      ),
+    );
+    expect(onFeedMoved).toHaveBeenCalledWith("feed-1", "Comics");
+  });
+
+  it("re-groups the sidebar in place, without re-reading the whole list", async () => {
+    const { localStore } = setup();
+
+    await fileIntoNewCollection("Comics");
+
+    // The heading appears because the feed now belongs to a collection.
+    expect(await screen.findByRole("heading", { name: /comics/i })).toBeInTheDocument();
+    // Only the initial load ran: re-counting every feed's unread entries to
+    // learn one folder name would be wasted work.
+    expect(localStore.listFeeds).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a failed write instead of pretending the feed moved", async () => {
+    const { onFeedMoved } = setup({
+      putFeed: vi.fn().mockRejectedValue(new Error("quota exceeded")),
+    });
+
+    await fileIntoNewCollection("Comics");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/quota exceeded/i);
+    expect(onFeedMoved).not.toHaveBeenCalled();
+  });
+
+  it("says so when the feed was removed while the picker was open", async () => {
+    setup({ getFeed: vi.fn().mockResolvedValue(undefined) });
+
+    await fileIntoNewCollection("Comics");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/no longer exists/i);
   });
 });

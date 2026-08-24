@@ -49,6 +49,15 @@ export interface ReadingPaneProps {
    */
   page?: number;
   pageCount?: number;
+  /**
+   * Blocks rendered per content page. MUST be the same value the consumer
+   * used to derive `pageCount` (App measures it from the pane's height via
+   * `useViewportPageSize`). Passing it explicitly is what keeps counting and
+   * slicing in sync: when the pane sliced by a hard-coded constant while App
+   * counted by the measured size, page 1 rendered the wrong number of blocks
+   * and the trailing pages were empty.
+   */
+  blocksPerPage?: number;
   onPrevPage?: () => void;
   onNextPage?: () => void;
   onScrollEnd?: () => void;
@@ -59,9 +68,16 @@ interface ReadingPaneContentProps {
   headingRef?: RefObject<HTMLHeadingElement>;
   page?: number;
   pageCount?: number;
+  blocksPerPage?: number;
 }
 
-function ReadingPaneContent({ entry, headingRef, page, pageCount }: ReadingPaneContentProps) {
+function ReadingPaneContent({
+  entry,
+  headingRef,
+  page,
+  pageCount,
+  blocksPerPage,
+}: ReadingPaneContentProps) {
   // A feed can independently supply full content, only a summary, or
   // neither, in which case summary-only entries link to the original.
   // These two booleans classify which of those three states
@@ -91,7 +107,12 @@ function ReadingPaneContent({ entry, headingRef, page, pageCount }: ReadingPaneC
       )}
       {body &&
         (paginated ? (
-          <PaginatedContent body={body} entryId={entry.id} page={page} />
+          <PaginatedContent
+            body={body}
+            entryId={entry.id}
+            page={page}
+            blocksPerPage={blocksPerPage}
+          />
         ) : (
           // The single enforced sanitization choke point: `body` is raw,
           // feed-supplied HTML and must never reach the DOM through plain
@@ -126,17 +147,20 @@ function PaginatedContent({
   body,
   entryId,
   page,
+  blocksPerPage,
 }: {
   body: string;
   entryId: string;
   page: number;
+  blocksPerPage?: number;
 }) {
   const sanitize = useSanitizer();
   const baseKey = `${entryId}:${shortHash(body)}`;
   const cleanBody = sanitize(body, baseKey);
   const blocks = splitTopLevelHtmlBlocks(cleanBody);
-  const htmlToRender = contentPageBlocks(blocks, page, CONTENT_PAGE_SIZE).join("");
-  return <SafeHtml html={htmlToRender} cacheKey={`${baseKey}:p${page}`} />;
+  const perPage = blocksPerPage ?? CONTENT_PAGE_SIZE;
+  const htmlToRender = contentPageBlocks(blocks, page, perPage).join("");
+  return <SafeHtml html={htmlToRender} cacheKey={`${baseKey}:p${page}:n${perPage}`} />;
 }
 
 export function ReadingPane({
@@ -147,6 +171,7 @@ export function ReadingPane({
   onToggleStar,
   page,
   pageCount,
+  blocksPerPage,
   onPrevPage,
   onNextPage,
   onScrollEnd,
@@ -223,6 +248,7 @@ export function ReadingPane({
           headingRef={headingRef}
           page={page}
           pageCount={pageCount}
+          blocksPerPage={blocksPerPage}
         />
       ) : (
         <p class="empty-state">Select an entry to start reading.</p>

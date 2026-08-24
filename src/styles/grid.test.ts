@@ -85,6 +85,7 @@ describe("grid.css: non-pane app-shell children get explicit full-width placemen
     "app-shell__toggle-error",
     "app-shell__actions",
     "app-shell__settings",
+    "app-shell__feed-note",
   ];
 
   function extractDesktopBlock(source: string): string {
@@ -163,5 +164,49 @@ describe("grid.css: non-pane app-shell children get explicit full-width placemen
     for (const paneClass of PANE_CLASSES) {
       expect(KNOWN_NON_PANE_CHILD_CLASSES).not.toContain(paneClass);
     }
+  });
+});
+
+/**
+ * Guard for the layout precondition content pagination depends on.
+ *
+ * jsdom performs no layout, so no rendering test can prove the panes scroll
+ * internally. What CAN be asserted is the CSS contract that makes it
+ * possible, and whose absence caused the defect: the shell must be bounded
+ * to the viewport HEIGHT (not merely floored by `min-height`), and the panes
+ * must carry `min-height: 0` so a grid item's default `min-height: auto`
+ * does not floor them at their content height and defeat `overflow-y: auto`.
+ *
+ * When those two rules were missing, `.reading-pane` grew as tall as the
+ * article, `useViewportPageSize` measured that full height, and content
+ * pagination collapsed to a single enormous page.
+ */
+describe("grid.css: the shell is height-bounded so panes scroll internally", () => {
+  function readGridCss(): string {
+    return readFileSync(resolve(process.cwd(), "src/styles/grid.css"), "utf-8");
+  }
+
+  function ruleBody(css: string, selector: string): string {
+    const start = css.indexOf(selector);
+    expect(start, `selector ${selector} not found in grid.css`).toBeGreaterThan(-1);
+    const open = css.indexOf("{", start);
+    const close = css.indexOf("}", open);
+    return css.slice(open + 1, close);
+  }
+
+  it("bounds .app-shell to the viewport height rather than only flooring it", () => {
+    const body = ruleBody(readGridCss(), ".app-shell {");
+
+    expect(body).toMatch(/(^|[\s;])height:\s*100dvh/);
+    // `min-height: 100vh` alone is exactly the regression: it lets the grid
+    // grow past the viewport, so the panes never overflow and never scroll.
+    expect(body).not.toMatch(/(^|[\s;])min-height:\s*100vh/);
+  });
+
+  it("gives the scrolling panes min-height: 0", () => {
+    const body = ruleBody(readGridCss(), ".feed-sidebar,\n.entry-list,\n.reading-pane {");
+
+    expect(body).toMatch(/(^|[\s;])min-height:\s*0/);
+    expect(body).toMatch(/(^|[\s;])overflow-y:\s*auto/);
   });
 });

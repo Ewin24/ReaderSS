@@ -983,3 +983,278 @@ html[data-visual="clean"] .add-feed-form__input {
   border-radius: 6px;
   transition: all 0.15s ease;
 }
+
+/* ---------------------------------------------------------------------------
+ * OpmlPanel
+ *
+ * Sits in the settings row under SettingsPanel, so it borrows the same
+ * bordered-group look rather than introducing a second panel style.
+ * ------------------------------------------------------------------------- */
+
+.opml-panel {
+  margin-top: 1rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.opml-panel__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.opml-panel__hint {
+  margin: 0 0 0.6rem;
+  font-size: 0.85em;
+  color: var(--color-text-muted, var(--color-text));
+}
+
+.opml-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* The file input is kept visible (not a styled-label trick): a native file
+ * control is the one widget users already know how to operate, and hiding it
+ * behind a fake button costs keyboard and screen-reader behaviour for
+ * nothing. */
+.opml-panel__import {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9em;
+}
+
+.opml-panel__import input {
+  font: inherit;
+  max-width: 15rem;
+}
+
+.opml-panel__feedback:empty {
+  display: none;
+}
+
+.opml-panel__status {
+  margin: 0.6rem 0 0;
+  font-size: 0.85em;
+}
+
+.opml-panel__status--error {
+  /* No danger token exists in visual.css; the app already marks errors with
+   * an accent rule rather than a red foreground (see .app-shell__toggle-error),
+   * so this follows that convention instead of inventing a palette entry. */
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--color-accent);
+}
+
+.opml-panel__problems {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  /* An import can fail on many feeds at once; the list scrolls inside the
+   * panel instead of pushing the whole settings row down the page. */
+  max-height: 12rem;
+  overflow-y: auto;
+  font-size: 0.85em;
+}
+
+.opml-panel__problem-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
+ * FeedNote
+ *
+ * Full-width row above the panes. Collapsed to a single control until there
+ * is something to show, so it never competes with the entry list for space.
+ * ------------------------------------------------------------------------- */
+
+.feed-note {
+  padding: 0.5rem 1rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+}
+
+.feed-note__view {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* The note is the reader's own writing, rendered as plain text. `pre-wrap` is
+ * what keeps the line breaks they typed, without the note ever becoming an
+ * HTML sink. */
+.feed-note__text {
+  margin: 0;
+  flex: 1 1 20rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9em;
+  /* A long note must not push the panes off screen: it scrolls in place. */
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.feed-note__add,
+.feed-note__edit {
+  font-size: 0.85em;
+}
+
+.feed-note__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.feed-note__label {
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.feed-note__input {
+  font: inherit;
+  font-size: 0.9em;
+  width: 100%;
+  max-width: 60ch;
+  padding: 0.35rem 0.5rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  resize: vertical;
+}
+
+.feed-note__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feed-note__hint,
+.feed-note__error {
+  margin: 0;
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+}
+
+.feed-note__error {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+ * FeedSidebar — collections
+ * ------------------------------------------------------------------------- */
+
+.feed-sidebar__group + .feed-sidebar__group {
+  margin-top: 0.75rem;
+}
+
+.feed-sidebar__group-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  /* The heading stays put while a long collection scrolls past it, so it is
+   * always clear which collection the feeds under the cursor belong to. */
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  z-index: 1;
+}
+
+.feed-sidebar__group-count {
+  font-weight: 400;
+}
+
+.feed-sidebar__move-open {
+  font-size: 0.85em;
+}
+
+.feed-sidebar__move {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-bg);
+}
+
+.feed-sidebar__move-label {
+  font-size: 0.75em;
+  color: var(--color-text-muted);
+}
+
+.feed-sidebar__move-select,
+.feed-sidebar__move-new {
+  font: inherit;
+  font-size: 0.85em;
+  width: 100%;
+  min-width: 0;
+  padding: 0.2rem 0.3rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.feed-sidebar__move-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.feed-sidebar__move-actions button {
+  font-size: 0.8em;
+}
+
+.feed-sidebar__move-error {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-text);
+}
+
+/* The heading is now a full-width toggle. Its own padding moves onto the
+ * button so the whole strip is clickable, not just the words. */
+.feed-sidebar__group-title {
+  padding: 0;
+}
+
+.feed-sidebar__group-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.feed-sidebar__group-caret {
+  flex: 0 0 auto;
+  font-size: 0.9em;
+}
+
+.feed-sidebar__group-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

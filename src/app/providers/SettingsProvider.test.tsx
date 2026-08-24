@@ -1,3 +1,4 @@
+import { feedsmithOpmlCodec } from "../../adapters/opml/feedsmithOpmlCodec";
 /**
  * Tests for SettingsProvider and useVisualSettings.
  *
@@ -87,7 +88,7 @@ const feedParser: FeedParserPort = { parse: vi.fn() };
 /** Wraps the provider inside a ServicesProvider, mirroring bootstrap.tsx. */
 function renderProvider(localStore: LocalStorePort, children: h.JSX.Element) {
   return render(
-    <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+    <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
       <SettingsProvider>{children}</SettingsProvider>
     </ServicesProvider>,
   );

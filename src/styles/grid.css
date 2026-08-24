@@ -50,14 +50,34 @@ body {
 .app-shell {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto auto 1fr 1fr;
+  /* One `auto` row per non-pane child (toggle-error, actions, settings,
+   * feed-note), then the two pane rows. `auto` means each collapses to
+   * nothing when its child renders nothing. */
+  grid-template-rows: auto auto auto auto 1fr 1fr;
   grid-template-areas:
     "toggle-error"
     "actions"
     "settings"
+    "feed-note"
     "sidebar"
     "pane";
-  min-height: 100vh;
+  /* HEIGHT-BOUNDED ON PURPOSE (was `min-height: 100vh`).
+   *
+   * With only a MINIMUM height the grid grew to fit its tallest child, so a
+   * long article made `.reading-pane` as tall as the article itself: its
+   * `overflow-y: auto` never engaged, the whole PAGE scrolled instead of the
+   * pane, and the pane's measured `clientHeight` was the full content height.
+   * Content pagination derives its page size from exactly that measurement
+   * (`useViewportPageSize`), so it resolved to the maximum block count and
+   * put practically the whole article on page 1 -- the "content is not
+   * paginated, it is extremely long" defect. Scroll-to-advance was dead for
+   * the same reason: an element that never overflows never fires the
+   * end-of-scroll condition.
+   *
+   * `dvh` first so mobile browser chrome (collapsing address bar) does not
+   * leave a dead strip; `vh` stays as the fallback for engines without it. */
+  height: 100vh;
+  height: 100dvh;
   max-width: 100vw;
 }
 
@@ -79,6 +99,14 @@ body {
   display: none;
 }
 
+/* Your own note about the selected feed, full width above the panes: it is
+ * about the whole feed, not about any one entry, so it does not belong inside
+ * either the list or the reading pane. Its row is `auto`, so it takes no space
+ * at all when no feed is selected and the container renders nothing. */
+.app-shell__feed-note {
+  grid-area: feed-note;
+}
+
 .feed-sidebar {
   grid-area: sidebar;
 }
@@ -98,6 +126,11 @@ body {
 .entry-list,
 .reading-pane {
   min-width: 0;
+  /* A grid item's default `min-height: auto` floors it at its content's
+   * height, which silently defeats `overflow-y: auto` -- the item grows
+   * instead of scrolling. Required for the height-bounded shell above to
+   * actually produce internally-scrolling panes. */
+  min-height: 0;
   overflow-y: auto;
   /* Real feed titles are sometimes a bare URL with no spaces to break on;
    * without this, such a title overflows its fixed-width column and
@@ -148,11 +181,12 @@ body {
 @media (min-width: 768px) {
   .app-shell {
     grid-template-columns: 220px 320px 1fr;
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto 1fr;
     grid-template-areas:
       "toggle-error toggle-error toggle-error"
       "actions actions actions"
       "settings settings settings"
+      "feed-note feed-note feed-note"
       "sidebar list pane";
   }
 
