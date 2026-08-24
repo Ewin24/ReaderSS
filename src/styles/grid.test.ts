@@ -210,3 +210,30 @@ describe("grid.css: the shell is height-bounded so panes scroll internally", () 
     expect(body).toMatch(/(^|[\s;])overflow-y:\s*auto/);
   });
 });
+
+/**
+ * Guard for a defect no rendering test in this project can catch.
+ *
+ * Collapsing a feed collection sets `hidden` on its list. `.feed-sidebar__list`
+ * is `display: flex`, and a class beats the UA stylesheet's type-level
+ * `[hidden] { display: none }` — so the attribute was set, the caret flipped,
+ * and the feeds stayed on screen.
+ *
+ * The component and container tests both PASSED throughout, because Testing
+ * Library derives the accessibility tree from the attribute and never consults
+ * CSS (jsdom performs no layout, and these stylesheets are not even loaded
+ * there). So the only place this can be pinned is the CSS text itself.
+ */
+describe("grid.css: the hidden attribute outranks any display rule", () => {
+  const css = readFileSync(resolve(process.cwd(), "src/styles/grid.css"), "utf-8");
+
+  it("declares a global [hidden] rule", () => {
+    expect(css).toMatch(/\[hidden\]\s*\{[^}]*display:\s*none/);
+  });
+
+  it("marks it !important, so a later class rule cannot outrank it", () => {
+    const rule = css.match(/(^|\n)\[hidden\]\s*\{([^}]*)\}/);
+    expect(rule, "expected a global [hidden] rule, not only scoped ones").not.toBeNull();
+    expect(rule?.[2]).toMatch(/display:\s*none\s*!important/);
+  });
+});

@@ -20,6 +20,30 @@ body {
 }
 
 /*
+ * `hidden` must actually hide.
+ *
+ * The UA stylesheet's `[hidden] { display: none }` is a type-level rule, so
+ * ANY class that sets its own `display` outranks it — and then an element
+ * carrying the `hidden` attribute stays on screen. This has now bitten the
+ * project twice: the settings panel (patched below with its own `[hidden]`
+ * rule) and the collapsible feed collections, whose `.feed-sidebar__list` is
+ * `display: flex`. Collapsing a collection flipped the caret and set the
+ * attribute, and the feeds just sat there.
+ *
+ * It is also invisible to the test suite: Testing Library builds the
+ * accessibility tree from the ATTRIBUTE, so `getByRole` correctly reported a
+ * collapsed list as gone while a real browser still painted it. Both the
+ * component and container tests passed on a broken UI.
+ *
+ * `!important` is deliberate. `hidden` is not a hint, and the whole point is
+ * that no future `display` declaration can quietly outrank it. One rule closes
+ * the class of defect instead of patching the next selector that trips it.
+ */
+[hidden] {
+  display: none !important;
+}
+
+/*
  * Layout strategy (fixed after the "off-screen reading pane" defect: the
  * actions bar was added as a direct child of `.app-shell` with no
  * grid placement rule, so it silently fell into the implicit grid ahead of
