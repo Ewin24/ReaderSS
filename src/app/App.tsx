@@ -57,6 +57,7 @@ interface LoadState {
 
 const LOADED: LoadState = { status: "loaded" };
 
+
 function toAppFeed(feed: { id: string; title: string; folder: string | null }): AppFeed {
   return { id: feed.id, title: feed.title, folder: feed.folder };
 }
@@ -236,6 +237,18 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   // change"). A ref guards against Preact re-running an effect whose deps are
   // referentially equal, so advancing pages (which changes none of these) can
   // never be clobbered by a spurious reset.
+  /**
+   * Remembered list page per feed: switching to another feed and coming back
+   * lands where you left off instead of on page 1.
+   *
+   * Session-scoped and in-memory ON PURPOSE -- a reload starts fresh. A page
+   * NUMBER is only meaningful against the exact list it was taken from, and
+   * that list is rebuilt from the store on every load (and pruned by the
+   * retention policy), so persisting the number would restore a position
+   * that may no longer point at the same entries.
+   */
+  const listPageByFeedRef = useRef(new Map<string | null, number>());
+
   const prevResetRef = useRef<{
     feedId: string | null;
     entries: readonly AppEntry[] | null;
@@ -251,12 +264,38 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     ) {
       return;
     }
+    // Only the selected feed changed: the underlying list is the same one the
+    // remembered page numbers were taken from, so restoring is safe.
+    const feedChangedOnly =
+      prevReset !== null &&
+      prevReset.entries === allEntries &&
+      prevReset.paginated === paginated &&
+      prevReset.feedId !== selectedFeedId;
     prevResetRef.current = { feedId: selectedFeedId, entries: allEntries, paginated };
+
+    if (feedChangedOnly) {
+      setListPage(listPageByFeedRef.current.get(selectedFeedId) ?? 1);
+      return;
+    }
+    // The data itself or the navigation mode changed, so a remembered page
+    // number no longer describes the same list -- drop it rather than restore
+    // a position that may not exist any more.
+    listPageByFeedRef.current.clear();
     setListPage(1);
   }, [selectedFeedId, allEntries, paginated]);
 
   const totalPageCount = pageCount(entryListItems);
   const currentPage = clampPage(listPage, totalPageCount);
+
+  /** Single writer for the list page, so every move is also remembered. */
+  const goToListPage = useCallback(
+    (next: number) => {
+      const target = clampPage(next, totalPageCount);
+      listPageByFeedRef.current.set(selectedFeedId, target);
+      setListPage(target);
+    },
+    [totalPageCount, selectedFeedId],
+  );
   const visibleEntryItems = paginated ? paginate(entryListItems, currentPage) : entryListItems;
 
   // Content pagination (navMode=paginated): the reading pane's body is split
@@ -288,6 +327,18 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     contentHash: string | null;
   } | null>(null);
   const prevContentReset = prevContentResetRef.current;
+
+  /**
+   * Remembered content page per entry, keyed by entry id AND body hash: an
+   * entry whose content actually changed (a corrected post re-fetched from
+   * the feed) is a different document, so its old page number is dropped
+   * rather than pointing into text that no longer exists. Same session-only
+   * rationale as `listPageByFeedRef`.
+   */
+  const contentPageByEntryRef = useRef(new Map<string, number>());
+  const contentMemoKey =
+    selectedEntryId !== null && contentHash !== null ? `${selectedEntryId}:${contentHash}` : null;
+
   useEffect(() => {
     if (
       prevContentReset &&
@@ -297,11 +348,25 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
       return;
     }
     prevContentResetRef.current = { entryId: selectedEntryId, contentHash };
-    setContentPage(1);
-  }, [selectedEntryId, contentHash]);
+    setContentPage(
+      contentMemoKey === null ? 1 : (contentPageByEntryRef.current.get(contentMemoKey) ?? 1),
+    );
+  }, [selectedEntryId, contentHash, contentMemoKey]);
 
   const contentPaginationActive = paginated && contentPageCountValue > 1;
   const clampedContentPage = clampPage(contentPage, contentPageCountValue);
+
+  /** Single writer for the content page, so every move is also remembered. */
+  const goToContentPage = useCallback(
+    (next: number) => {
+      const target = clampPage(next, contentPageCountValue);
+      if (contentMemoKey !== null) {
+        contentPageByEntryRef.current.set(contentMemoKey, target);
+      }
+      setContentPage(target);
+    },
+    [contentPageCountValue, contentMemoKey],
+  );
 
   // Only used in override/test mode: the store-driven sidebar renders
   // through `FeedSidebarContainer` below instead, which loads its own feed
@@ -475,9 +540,13 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
         onToggleError={handleToggleError}
         page={paginated ? currentPage : undefined}
         pageCount={paginated ? totalPageCount : undefined}
-        onPrevPage={paginated ? () => setListPage((p) => clampPage(p - 1, totalPageCount)) : undefined}
-        onNextPage={paginated ? () => setListPage((p) => clampPage(p + 1, totalPageCount)) : undefined}
-        onScrollEnd={paginated ? () => setListPage((p) => clampPage(p + 1, totalPageCount)) : undefined}
+        onPrevPage={paginated ? () => goToListPage(currentPage - 1) : undefined}
+        onNextPage={paginated ? () => goToListPage(currentPage + 1) : undefined}
+        // NO scroll-to-advance. Reaching the bottom of a page used to jump to
+        // the next one, which reads as the page moving out from under you --
+        // scrolling is how you read a page that does not quite fit, not a
+        // request to leave it. Page changes are explicit (Prev/Next) only.
+        onScrollEnd={undefined}
       />
     );
   })();
@@ -538,20 +607,13 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
           // the trailing pages come out empty.
           blocksPerPage={contentPaginationActive ? contentBlocksPerPage : undefined}
           onPrevPage={
-            contentPaginationActive
-              ? () => setContentPage((p) => clampPage(p - 1, contentPageCountValue))
-              : undefined
+            contentPaginationActive ? () => goToContentPage(clampedContentPage - 1) : undefined
           }
           onNextPage={
-            contentPaginationActive
-              ? () => setContentPage((p) => clampPage(p + 1, contentPageCountValue))
-              : undefined
+            contentPaginationActive ? () => goToContentPage(clampedContentPage + 1) : undefined
           }
-          onScrollEnd={
-            contentPaginationActive
-              ? () => setContentPage((p) => clampPage(p + 1, contentPageCountValue))
-              : undefined
-          }
+          // NO scroll-to-advance -- same rationale as the entry list above.
+          onScrollEnd={undefined}
         />
       )}
     </div>

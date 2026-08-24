@@ -617,22 +617,42 @@ describe("App", () => {
       expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
     });
 
-    it("advances to the next slice of already-loaded entries at the viewport end, with no new store query", async () => {
+    /**
+     * Reaching the bottom of a page USED to jump to the next one. That was
+     * removed as a defect, not simplified away: a page of 20 entries rarely
+     * fits a viewport-height pane, so the scrollbar was almost always there,
+     * and scrolling to read the rest of the page silently replaced it. Page
+     * changes are explicit now.
+     */
+    it("does NOT change page when the list is scrolled to its end", async () => {
       stubMatchMedia(true);
       const many = makeManyEntries(25);
       const localStore = localStoreWithNavMode("paginated", many);
       renderApp({ feeds, entries: many }, localStore);
 
       const list = await screen.findByRole("list", { name: "Entries" });
-      // Wait until pagination is active (settings loaded) so onScroll is attached.
       await screen.findByText("Page 1 of 2");
-      // Flush the pending reset effect (queued when navMode flipped to
-      // paginated on load) so it cannot clobber the scroll's page advance.
       await flushEffects();
       Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
       Object.defineProperty(list, "scrollHeight", { value: 100, configurable: true });
       list.scrollTop = 50;
       fireEvent.scroll(list);
+      await flushEffects();
+
+      expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^article 1, /i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^article 21, /i })).not.toBeInTheDocument();
+    });
+
+    it("advances to the next slice of already-loaded entries via Next, with no new store query", async () => {
+      stubMatchMedia(true);
+      const many = makeManyEntries(25);
+      const localStore = localStoreWithNavMode("paginated", many);
+      renderApp({ feeds, entries: many }, localStore);
+
+      await screen.findByText("Page 1 of 2");
+      await flushEffects();
+      fireEvent.click(screen.getByRole("button", { name: /next page/i }));
 
       expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /^article 21, /i })).toBeInTheDocument();
@@ -645,13 +665,9 @@ describe("App", () => {
       const many = makeManyEntries(25);
       const first = renderApp({ feeds, entries: many }, localStoreWithNavMode("paginated", many));
 
-      const list = await screen.findByRole("list", { name: "Entries" });
       await screen.findByText("Page 1 of 2");
       await flushEffects();
-      Object.defineProperty(list, "clientHeight", { value: 50, configurable: true });
-      Object.defineProperty(list, "scrollHeight", { value: 100, configurable: true });
-      list.scrollTop = 50;
-      fireEvent.scroll(list);
+      fireEvent.click(screen.getByRole("button", { name: /next page/i }));
       expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
       first.unmount();
 
@@ -984,5 +1000,134 @@ describe("App", () => {
       );
       expect(await screen.findByText(/add a feed to see its entries/i)).toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * Page memory. Moving to another feed and back, or to another entry and
+ * back, returns to the page you left rather than to page 1.
+ *
+ * Scope, asserted deliberately: memory is keyed to the exact list/document it
+ * was taken from. When the underlying entries change (a refresh, a prune) the
+ * remembered list position is DROPPED, because a page number only means
+ * something against the list it was measured on. Nothing is persisted across
+ * a reload for the same reason.
+ */
+describe("App — remembered pagination position", () => {
+  async function flush() {
+    for (let i = 0; i < 5; i += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    }
+  }
+
+  function paginatedStore(all: AppEntry[]) {
+    const store = makeLocalStore(feeds.map(toDomainFeed), all.map(toDomainEntry));
+    store.getConfigValue = vi.fn(async <T,>(key: string): Promise<T | undefined> => {
+      if (key === "visual") return { navMode: "paginated" } as T;
+      return undefined;
+    }) as LocalStorePort["getConfigValue"];
+    return store;
+  }
+
+  function entriesFor(feedId: string, count: number, prefix: string): AppEntry[] {
+    return Array.from({ length: count }, (_, i) => ({
+      id: `${prefix}-${i + 1}`,
+      feedId,
+      title: `${prefix} ${i + 1}`,
+      publishedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+      read: 0 as const,
+      starred: 0 as const,
+      link: `https://example.com/${prefix}/${i + 1}`,
+      summary: null,
+      content: null,
+    }));
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns to the page you left when you switch feeds and come back", async () => {
+    stubMatchMedia(true);
+    const all = [...entriesFor("feed-1", 25, "Alpha"), ...entriesFor("feed-2", 25, "Beta")];
+    renderApp({ feeds, entries: all }, paginatedStore(all));
+
+    // Feed 1 -> page 2.
+    fireEvent.click(screen.getByRole("button", { name: /^Hacker News,/i }));
+    await screen.findByText("Page 1 of 2");
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: /next page/i }));
+    expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
+
+    // Away to feed 2: its own position starts at page 1.
+    fireEvent.click(screen.getByRole("button", { name: /^Ars Technica,/i }));
+    await flush();
+    expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+
+    // Back to feed 1: page 2 again, not page 1.
+    fireEvent.click(screen.getByRole("button", { name: /^Hacker News,/i }));
+    await flush();
+    expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Alpha 21,/i })).toBeInTheDocument();
+  });
+
+  it("returns to the content page you left when you reopen the same entry", async () => {
+    stubMatchMedia(true);
+    const long: AppEntry = {
+      id: "entry-long",
+      feedId: "feed-1",
+      title: "A long article",
+      publishedAt: "2026-08-18T09:00:00.000Z",
+      read: 0,
+      starred: 0,
+      link: "https://example.com/long",
+      summary: null,
+      content: Array.from({ length: 14 }, (_, i) => `<p>P${i + 1}</p>`).join(""),
+    };
+    const other: AppEntry = {
+      ...long,
+      id: "entry-other",
+      title: "Another article",
+      link: "https://example.com/other",
+      content: "<p>Only one</p>",
+    };
+    const all = [long, other];
+    renderApp({ feeds, entries: all }, paginatedStore(all));
+
+    fireEvent.click(screen.getByRole("button", { name: /^a long article/i }));
+    await screen.findByText(/page 1 of \d+/i);
+    fireEvent.click(screen.getByRole("button", { name: /next page/i }));
+    expect(await screen.findByText(/page 2 of \d+/i)).toBeInTheDocument();
+
+    // Open a different entry, then come back to the first one.
+    fireEvent.click(screen.getByRole("button", { name: /^another article/i }));
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: /^a long article/i }));
+    await flush();
+
+    expect(screen.getByText(/page 2 of \d+/i)).toBeInTheDocument();
+  });
+
+  it("drops the remembered list page when the underlying entries change", async () => {
+    stubMatchMedia(true);
+    const all = entriesFor("feed-1", 25, "Alpha");
+    const first = renderApp({ feeds, entries: all }, paginatedStore(all));
+
+    fireEvent.click(screen.getByRole("button", { name: /^Hacker News,/i }));
+    await screen.findByText("Page 1 of 2");
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: /next page/i }));
+    expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
+    first.unmount();
+
+    const fewer = entriesFor("feed-1", 5, "Alpha");
+    renderApp({ feeds, entries: fewer }, paginatedStore(fewer));
+    await flush();
+
+    // One page only: the footer is hidden entirely, which is also proof the
+    // stale "page 2" was not restored.
+    expect(screen.queryByText(/page \d+ of \d+/i)).not.toBeInTheDocument();
   });
 });
