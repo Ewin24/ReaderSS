@@ -24,6 +24,7 @@ import { openReaderSSDatabase } from "../../adapters/store/schema";
 import { createIdbLocalStore } from "../../adapters/store/idbLocalStore";
 import { RelayFeedSource } from "../../adapters/feed/relayFeedSource";
 import { feedParser } from "../../adapters/feed/feedParser";
+import { feedsmithOpmlCodec } from "../../adapters/opml/feedsmithOpmlCodec";
 import { DomPurifySanitizer } from "../../adapters/security/domPurifySanitizer";
 import type { SanitizeFn } from "../../ui/components/SafeHtml";
 import type { Services } from "../providers/ServicesContext";
@@ -49,6 +50,7 @@ export async function buildServices(): Promise<BuiltServices> {
     clock: { now: () => new Date().toISOString() },
     feedSource: new RelayFeedSource(),
     feedParser,
+    opmlCodec: feedsmithOpmlCodec,
   };
 
   return {

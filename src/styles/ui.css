@@ -985,6 +985,88 @@ html[data-visual="clean"] .add-feed-form__input {
 }
 
 /* ---------------------------------------------------------------------------
+ * OpmlPanel
+ *
+ * Sits in the settings row under SettingsPanel, so it borrows the same
+ * bordered-group look rather than introducing a second panel style.
+ * ------------------------------------------------------------------------- */
+
+.opml-panel {
+  margin-top: 1rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.opml-panel__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.opml-panel__hint {
+  margin: 0 0 0.6rem;
+  font-size: 0.85em;
+  color: var(--color-text-muted, var(--color-text));
+}
+
+.opml-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* The file input is kept visible (not a styled-label trick): a native file
+ * control is the one widget users already know how to operate, and hiding it
+ * behind a fake button costs keyboard and screen-reader behaviour for
+ * nothing. */
+.opml-panel__import {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9em;
+}
+
+.opml-panel__import input {
+  font: inherit;
+  max-width: 15rem;
+}
+
+.opml-panel__feedback:empty {
+  display: none;
+}
+
+.opml-panel__status {
+  margin: 0.6rem 0 0;
+  font-size: 0.85em;
+}
+
+.opml-panel__status--error {
+  /* No danger token exists in visual.css; the app already marks errors with
+   * an accent rule rather than a red foreground (see .app-shell__toggle-error),
+   * so this follows that convention instead of inventing a palette entry. */
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--color-accent);
+}
+
+.opml-panel__problems {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  /* An import can fail on many feeds at once; the list scrolls inside the
+   * panel instead of pushing the whole settings row down the page. */
+  max-height: 12rem;
+  overflow-y: auto;
+  font-size: 0.85em;
+}
+
+.opml-panel__problem-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
  * FeedNote
  *
  * Full-width row above the panes. Collapsed to a single control until there

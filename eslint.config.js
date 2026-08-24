@@ -194,9 +194,24 @@ export default tseslint.config(
     // exemption it never needed and never asked for. The raw-HTML-sink and
     // dompurify-import bans still apply to these two files unchanged --
     // only the layer-zone import-path rule is relaxed here.
+    //   - importOpml.test.ts (services/** importing adapters/feed/** and
+    //     adapters/opml/**) drives a real OPML document through the real
+    //     codec and the real feedParser: the whole point of the test is that
+    //     an imported feed takes the SAME path as a typed-in one, which a
+    //     mocked codec would assert nothing about.
+    //   - OpmlContainer.test.tsx (ui/containers/** importing the same two)
+    //     parses real OPML text end to end for the same reason.
+    // Every OTHER container test uses `src/test/doubles/opmlCodecStub.ts`
+    // instead, precisely so this list does not grow for tests that only need
+    // to fill a field on `Services`.
     files: [
       "src/ui/components/SafeHtml/SafeHtml.test.tsx",
       "src/services/subscribeToFeed.test.ts",
+      "src/services/importOpml.test.ts",
+      // exportOpml.test.ts asserts the exported document is readable back by
+      // the same real codec (a round trip); a mock could not show that.
+      "src/services/exportOpml.test.ts",
+      "src/ui/containers/OpmlContainer.test.tsx",
     ],
     rules: {
       "import-x/no-restricted-paths": "off",

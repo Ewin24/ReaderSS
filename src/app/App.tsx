@@ -18,6 +18,7 @@ import { EntryListContainer } from "../ui/containers/EntryListContainer";
 import { ReadingPaneContainer } from "../ui/containers/ReadingPaneContainer";
 import { FeedSidebarContainer } from "../ui/containers/FeedSidebarContainer";
 import { AddFeedContainer } from "../ui/containers/AddFeedContainer";
+import { OpmlContainer } from "../ui/containers/OpmlContainer";
 import { FeedNoteContainer } from "../ui/containers/FeedNoteContainer";
 import { RefreshContainer } from "../ui/containers/RefreshContainer";
 import type { ReadingPaneEntry } from "../ui/components/ReadingPane";
@@ -462,6 +463,16 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     [usingOverride],
   );
 
+  /**
+   * An OPML import adds feeds in bulk. Unlike a single subscribe it does NOT
+   * select anything: picking one of forty imported feeds for the user would be
+   * an arbitrary jump away from wherever they were.
+   */
+  const handleFeedsImported = useCallback(() => {
+    bumpFeedList();
+    bumpEntries();
+  }, [bumpFeedList, bumpEntries]);
+
   // A newly subscribed feed must appear in the feed list without a page
   // reload, and is also selected immediately, so its entries are visible
   // without an extra click.
@@ -602,6 +613,13 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
         hidden={!settingsOpen}
       >
         <SettingsPanel settings={settings} onUpdateSettings={updateSettings} />
+        {/* Lives inside the settings row rather than the actions bar: an
+          * import is an occasional, deliberate act, not a per-session control,
+          * and putting it here keeps it out of the way without hiding it. It
+          * is a child of this row's div, NOT of `.app-shell` -- adding a
+          * direct `.app-shell` child would need its own grid area (see
+          * grid.css's placement contract and `grid.test.ts`'s guard). */}
+        <OpmlContainer onImported={handleFeedsImported} />
       </div>
       {/* Its own full-width row (see grid.css's placement contract): the note
         * is about the whole feed, so it belongs above the panes rather than

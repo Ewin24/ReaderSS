@@ -1,3 +1,4 @@
+import { opmlCodecStub } from "../../test/doubles/opmlCodecStub";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
@@ -78,7 +79,7 @@ describe("FeedSidebarContainer", () => {
     });
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
       </ServicesProvider>,
     );
@@ -104,7 +105,7 @@ describe("FeedSidebarContainer", () => {
     const localStore = makeLocalStore({ listFeeds });
 
     const { rerender } = render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer
           selectedFeedId={null}
           onSelectFeed={vi.fn()}
@@ -120,7 +121,7 @@ describe("FeedSidebarContainer", () => {
     expect(listFeeds).toHaveBeenCalledTimes(1);
 
     rerender(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer
           selectedFeedId={null}
           onSelectFeed={vi.fn()}
@@ -151,7 +152,7 @@ describe("FeedSidebarContainer", () => {
     // `FeedSidebarContainer`'s `useServices()` reference every time and
     // mask the exact thing this test isolates: whether `refreshSignal`'s
     // VALUES, not `services`, drive the re-fetch decision.
-    const services = { localStore, clock, feedSource, feedParser };
+    const services = { localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub };
 
     const { rerender } = render(
       <ServicesProvider services={services}>
@@ -209,7 +210,7 @@ describe("FeedSidebarContainer", () => {
     const localStore = makeLocalStore({ listFeeds });
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
       </ServicesProvider>,
     );
@@ -228,7 +229,7 @@ describe("FeedSidebarContainer", () => {
     const onLoadError = vi.fn();
 
     render(
-      <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+      <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
         <FeedSidebarContainer
           selectedFeedId={null}
           onSelectFeed={vi.fn()}
@@ -256,7 +257,7 @@ describe("FeedSidebarContainer", () => {
       const onFeedRemoved = vi.fn();
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer
             selectedFeedId={null}
             onSelectFeed={vi.fn()}
@@ -277,7 +278,7 @@ describe("FeedSidebarContainer", () => {
       const localStore = makeLocalStore({ listFeeds: vi.fn().mockResolvedValue([feed]) });
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
         </ServicesProvider>,
       );
@@ -293,7 +294,7 @@ describe("FeedSidebarContainer", () => {
       const localStore = makeLocalStore({ listFeeds: vi.fn().mockResolvedValue([feed]) });
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
         </ServicesProvider>,
       );
@@ -315,7 +316,7 @@ describe("FeedSidebarContainer", () => {
       const onFeedRemoved = vi.fn();
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer
             selectedFeedId={null}
             onSelectFeed={vi.fn()}
@@ -342,7 +343,7 @@ describe("FeedSidebarContainer", () => {
       });
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
           <FeedSidebarContainer selectedFeedId={null} onSelectFeed={vi.fn()} />
         </ServicesProvider>,
       );
@@ -355,3 +356,4 @@ describe("FeedSidebarContainer", () => {
     });
   });
 });
+

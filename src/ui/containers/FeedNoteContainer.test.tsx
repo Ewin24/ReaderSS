@@ -1,3 +1,4 @@
+import { opmlCodecStub } from "../../test/doubles/opmlCodecStub";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { createFeed, type Feed } from "../../domain/models/Feed";
@@ -42,6 +43,7 @@ function renderContainer(
     clock,
     feedSource,
     feedParser,
+    opmlCodec: opmlCodecStub,
   };
 
   const rendered = render(

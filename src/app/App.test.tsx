@@ -1,3 +1,4 @@
+import { feedsmithOpmlCodec } from "../adapters/opml/feedsmithOpmlCodec";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, act } from "@testing-library/preact";
 import { App } from "./App";
@@ -125,7 +126,7 @@ function renderApp(
   localStore: LocalStorePort = makeLocalStore(feeds.map(toDomainFeed), entries.map(toDomainEntry)),
 ) {
   return render(
-    <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+    <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
       <SettingsProvider>
         <SanitizerContext.Provider value={identitySanitize}>
           <App {...props} />
@@ -288,7 +289,7 @@ describe("App", () => {
       const localStore = makeLocalStore([feed], [entry]);
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
               <App />
@@ -326,7 +327,7 @@ describe("App", () => {
       const localStore = makeLocalStore([feed], [entry]);
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
               <App />
@@ -354,7 +355,7 @@ describe("App", () => {
       );
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
               <App />
@@ -378,7 +379,7 @@ describe("App", () => {
       localStore.listFeeds = vi.fn().mockRejectedValue(new Error("IDB closed"));
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
               <App />
@@ -429,7 +430,7 @@ describe("App", () => {
       };
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
               <App />
@@ -496,7 +497,7 @@ describe("App", () => {
       };
 
       render(
-        <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+        <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: feedsmithOpmlCodec }}>
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
               <App />
@@ -881,7 +882,7 @@ describe("App", () => {
 
       render(
         <ServicesProvider
-          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
+          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub, opmlCodec: feedsmithOpmlCodec }}
         >
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
@@ -949,7 +950,7 @@ describe("App", () => {
 
       render(
         <ServicesProvider
-          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
+          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub, opmlCodec: feedsmithOpmlCodec }}
         >
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>
@@ -975,7 +976,7 @@ describe("App", () => {
 
       render(
         <ServicesProvider
-          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub }}
+          services={{ localStore, clock, feedSource: feedSourceStub, feedParser: feedParserStub, opmlCodec: feedsmithOpmlCodec }}
         >
           <SettingsProvider>
             <SanitizerContext.Provider value={identitySanitize}>

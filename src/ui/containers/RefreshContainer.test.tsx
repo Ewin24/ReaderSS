@@ -1,3 +1,4 @@
+import { opmlCodecStub } from "../../test/doubles/opmlCodecStub";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import type { ClockPort } from "../../ports/ClockPort";
@@ -60,7 +61,7 @@ function renderContainer(
   onRefreshed?: () => void,
 ) {
   return render(
-    <ServicesProvider services={{ localStore, clock, feedSource, feedParser }}>
+    <ServicesProvider services={{ localStore, clock, feedSource, feedParser, opmlCodec: opmlCodecStub }}>
       <RefreshContainer onRefreshed={onRefreshed} />
     </ServicesProvider>,
   );

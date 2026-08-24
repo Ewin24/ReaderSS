@@ -12,6 +12,7 @@ import type { ClockPort } from "../../ports/ClockPort";
 import type { FeedParserPort } from "../../ports/FeedParserPort";
 import type { FeedSourcePort } from "../../ports/FeedSourcePort";
 import type { LocalStorePort } from "../../ports/LocalStorePort";
+import type { OpmlCodecPort } from "../../ports/OpmlCodecPort";
 
 export interface Services {
   readonly localStore: LocalStorePort;
@@ -29,6 +30,12 @@ export interface Services {
    * feed needs this on `Services` alongside `feedSource`.
    */
   readonly feedParser: FeedParserPort;
+  /**
+   * Reads and writes OPML subscription lists. Required, not optional: an
+   * optional service would let the OPML container render its controls and
+   * then fail at click time, which is worse than a wiring error at startup.
+   */
+  readonly opmlCodec: OpmlCodecPort;
 }
 
 const ServicesContext = createContext<Services | null>(null);
