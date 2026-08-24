@@ -86,7 +86,15 @@ export function EntryList({
   };
 
   return (
-    <>
+    // The list and its pagination footer share ONE placed container.
+    //
+    // They used to be siblings in a Fragment, which made both of them direct
+    // children of `.app-shell` -- and the footer had no `grid-area`, so it
+    // fell into the implicit grid and rendered somewhere nobody chose. That is
+    // exactly the defect grid.css's file comment describes. Wrapping them also
+    // gives the footer its natural place: pinned under a list that scrolls
+    // inside the column, instead of scrolling away with the entries.
+    <div class="entry-list-pane">
       <ul
         class="entry-list"
         aria-label="Entries"
@@ -128,6 +136,6 @@ export function EntryList({
           </button>
         </nav>
       )}
-    </>
+    </div>
   );
 }

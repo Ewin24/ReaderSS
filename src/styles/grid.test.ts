@@ -76,7 +76,7 @@ describe("grid.css: non-pane app-shell children get explicit full-width placemen
   // The three presentational panes. These intentionally do NOT span the
   // full width -- they are the columns the layout is built around -- so
   // they are excluded from the full-width check below.
-  const PANE_CLASSES = ["feed-sidebar", "entry-list", "reading-pane"];
+  const PANE_CLASSES = ["feed-sidebar", "entry-list-pane", "reading-pane"];
 
   // Every other class `App.tsx` renders as a DIRECT child of `.app-shell`,
   // as of this fix (see the file-level comment above for the maintenance

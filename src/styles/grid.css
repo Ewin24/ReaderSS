@@ -117,9 +117,24 @@ body {
  * assigning them the same area never produces an actual overlap. The
  * desktop media query below gives `.entry-list` its own "list" area once
  * both panes are mounted together. */
-.entry-list,
+.entry-list-pane,
 .reading-pane {
   grid-area: pane;
+}
+
+/* The list column is a column: the entries scroll, the pagination footer
+ * stays put underneath them. `min-height: 0` on both the container and the
+ * list is what lets the `<ul>` actually shrink and scroll instead of pushing
+ * the footer out of the grid row. */
+.entry-list-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.entry-list-pane .entry-list {
+  flex: 1 1 auto;
 }
 
 .feed-sidebar,
@@ -194,7 +209,7 @@ body {
    * `.entry-list` needs its own column here, distinct from
    * `.reading-pane`'s "pane" area (see the mobile-shared-area comment
    * above). */
-  .entry-list {
+  .entry-list-pane {
     grid-area: list;
   }
 }
