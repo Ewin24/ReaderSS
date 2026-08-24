@@ -83,7 +83,7 @@ export function EntryListItem({
               }}
             >
               <span aria-hidden="true" class="entry-list-item__icon">
-                {entry.read === 1 ? "○" : "●"}
+                {entry.read === 1 ? "✓" : "●"}
               </span>
             </button>
           )}

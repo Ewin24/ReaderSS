@@ -83,9 +83,10 @@ export function FeedSidebar({ feeds, selectedFeedId, onSelectFeed, onRemoveFeed 
                     type="button"
                     class="feed-sidebar__remove"
                     aria-label={`Remove ${feed.title}`}
+                    title={`Remove ${feed.title}`}
                     onClick={() => setConfirmingFeedId(feed.id)}
                   >
-                    Remove
+                    <span aria-hidden="true">🗑</span>
                   </button>
                 ))}
             </li>
