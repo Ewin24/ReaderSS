@@ -1153,6 +1153,7 @@ describe("App — every direct child of the shell has a placement", () => {
     "app-shell__toggle-error",
     "app-shell__actions",
     "app-shell__settings",
+    "app-shell__search",
     "app-shell__feed-note",
     "feed-sidebar",
     "entry-list-pane",
@@ -1200,5 +1201,110 @@ describe("App — every direct child of the shell has a placement", () => {
       .filter((className) => !PLACED_CLASSES.some((known) => className.split(/\s+/).includes(known)));
 
     expect(unplaced).toEqual([]);
+  });
+});
+
+/**
+ * The search box searches the WHOLE library, so its results routinely point
+ * at a feed other than the one on screen. Opening one is therefore a
+ * multi-step move -- select the feed, wait for its entries, select the entry,
+ * and page the list to where that entry actually is -- and every step of it
+ * lives in `App`. A result that selects an article the list is not showing is
+ * a half-finished navigation, which is exactly what "take me to where you
+ * found it" is asking not to happen.
+ */
+describe("App — opening a search result", () => {
+  function searchableStore(navMode: "auto" | "paginated", allEntries: AppEntry[]) {
+    const store = makeLocalStore(feeds.map(toDomainFeed), allEntries.map(toDomainEntry));
+    store.listEntriesByPublished = vi.fn(async () =>
+      allEntries
+        .map(toDomainEntry)
+        .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
+    ) as LocalStorePort["listEntriesByPublished"];
+    store.getConfigValue = vi.fn(async <T,>(key: string): Promise<T | undefined> => {
+      if (key === "visual") return { navMode } as T;
+      return undefined;
+    }) as LocalStorePort["getConfigValue"];
+    return store;
+  }
+
+  function typeSearch(text: string) {
+    fireEvent.input(screen.getByRole("searchbox"), { target: { value: text } });
+  }
+
+  it("opens an article that lives in a feed other than the one being read", async () => {
+    stubMatchMedia(true);
+    renderApp({}, searchableStore("auto", entries));
+    // Feed 1 is selected by default; the match is in feed 2.
+    await screen.findByRole("button", { name: /^indexeddb in practice,/i });
+
+    typeSearch("service worker");
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /^service worker gotchas, in ars technica/i,
+      }),
+    );
+
+    // The reading pane is on the found article...
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Service worker gotchas" }),
+      ).toBeInTheDocument(),
+    );
+    // ...and the list beside it is that article's feed, not the old one.
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: /^indexeddb in practice,/i }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("selects the feed, and no article, for a feed result", async () => {
+    stubMatchMedia(true);
+    renderApp({}, searchableStore("auto", entries));
+    await screen.findByRole("button", { name: /^indexeddb in practice,/i });
+
+    typeSearch("ars technica");
+    fireEvent.click(await screen.findByRole("button", { name: "Feed: Ars Technica" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^service worker gotchas,/i })).toBeInTheDocument(),
+    );
+    // Nothing was opened: picking a feed is "show me this feed", not "open
+    // something in it".
+    expect(screen.getByText(/select an entry/i)).toBeInTheDocument();
+  });
+
+  it("pages the list to where the found article actually is", async () => {
+    // The defect this guards: selecting the fortieth match leaves the list on
+    // page one, so the reader ends up with a reading pane showing an article
+    // that is nowhere in the list beside it.
+    stubMatchMedia(true);
+    const buried: AppEntry[] = Array.from({ length: 25 }, (_, i) => ({
+      id: `entry-${i + 1}`,
+      feedId: "feed-2",
+      // i=0 is the OLDEST, so newest-first ordering puts it last: page 2.
+      title: i === 0 ? "Deep buried needle" : `Article ${i + 1}`,
+      publishedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+      read: 0 as const,
+      starred: 0 as const,
+      link: `https://example.com/${i + 1}`,
+      summary: null,
+      content: null,
+    }));
+
+    renderApp({}, searchableStore("paginated", buried));
+    await screen.findByRole("searchbox");
+
+    typeSearch("buried needle");
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^deep buried needle, in ars technica/i }),
+    );
+
+    await waitFor(() => expect(screen.getByText("Page 2 of 2")).toBeInTheDocument());
+    // And it is really on screen, not merely on a page number that says so.
+    expect(
+      screen.getByRole("button", { name: /^deep buried needle, .*unread/i }),
+    ).toBeInTheDocument();
   });
 });

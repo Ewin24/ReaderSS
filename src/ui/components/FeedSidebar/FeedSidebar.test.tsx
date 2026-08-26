@@ -330,22 +330,41 @@ describe("FeedSidebar — collapsing collections", () => {
     expect(screen.queryByRole("list", { name: "No collection" })).not.toBeInTheDocument();
   });
 
-  it("keeps the heading, and its unread count, visible while collapsed", () => {
-    // The whole point of collapsing is to still know where the new things
-    // are without expanding each collection to look.
+  it("keeps the heading, and both of its counts, visible while collapsed", () => {
+    // The whole point of collapsing is to still know what is in there, and
+    // where the new things are, without expanding each collection to look.
     renderSidebar();
 
     fireEvent.click(toggleFor(/^comics,/i));
 
     const heading = screen.getByRole("heading", { name: "Comics" });
     expect(heading).toBeInTheDocument();
+    // Comics: 2 feeds, 3 unread.
+    expect(heading.textContent).toContain("2");
     expect(heading.textContent).toContain("3");
   });
 
-  it("falls back to the feed count when a collection has nothing unread", () => {
+  it("shows both numbers even when a collection has nothing unread", () => {
+    // A SINGLE number was the defect: it showed unread when there was any and
+    // the feed count otherwise, so the same badge meant two different things
+    // depending on data the reader cannot see. "1" next to News could be one
+    // feed or one unread article, and nothing on screen said which.
     renderSidebar();
 
-    expect(screen.getByRole("heading", { name: "News" }).textContent).toContain("1");
+    // News: 1 feed, 0 unread. The zero is shown, not swapped for the feed
+    // count.
+    const heading = screen.getByRole("heading", { name: "News" });
+    expect(heading.textContent).toContain("1");
+    expect(heading.textContent).toContain("0");
+  });
+
+  it("labels the two numbers on hover, so the badge is not a riddle", () => {
+    renderSidebar();
+
+    expect(screen.getByRole("heading", { name: "Comics" }).querySelector("[title]")).toHaveAttribute(
+      "title",
+      "2 feeds, 3 unread",
+    );
   });
 
   it("names each heading, so heading navigation can reach it", () => {

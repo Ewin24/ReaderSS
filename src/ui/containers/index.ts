@@ -12,3 +12,6 @@ export type { OpmlContainerProps } from "./OpmlContainer";
 
 export { FeedNoteContainer } from "./FeedNoteContainer";
 export type { FeedNoteContainerProps } from "./FeedNoteContainer";
+
+export { SearchContainer } from "./SearchContainer";
+export type { SearchContainerProps } from "./SearchContainer";

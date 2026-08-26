@@ -286,12 +286,32 @@ export function FeedSidebar({
                     <span class="feed-sidebar__group-name" aria-hidden="true">
                       {label}
                     </span>
-                    {/* Unread beats feed count when there is any: collapsed is
-                      * exactly when you cannot see the per-feed badges, and
-                      * "is there anything new in here" is the question that
-                      * decides whether to open it. */}
-                    <span class="feed-sidebar__group-count" aria-hidden="true">
-                      {unread > 0 ? unread : group.feeds.length}
+                    {/* BOTH numbers, always: feeds first, then unread.
+                      *
+                      * This used to be ONE number -- unread when there was
+                      * any, the feed count otherwise -- which made the same
+                      * badge mean two different things depending on data the
+                      * reader cannot see while the collection is collapsed. A
+                      * "1" next to a collection was either one feed or one
+                      * unread article, and nothing on screen said which.
+                      *
+                      * Neither number can be dropped: collapsed is exactly
+                      * when you can see neither the feeds nor their unread
+                      * badges, so "what is in here" and "is there anything
+                      * new" both stop being answerable. The zero is shown for
+                      * the same reason -- swapping it for the other number is
+                      * what created the ambiguity in the first place. `title`
+                      * spells the pair out on hover; the toggle's
+                      * `aria-label` already spells it out for assistive
+                      * technology. */}
+                    <span
+                      class="feed-sidebar__group-count"
+                      aria-hidden="true"
+                      title={`${group.feeds.length} feeds, ${unread} unread`}
+                    >
+                      <span class="feed-sidebar__group-feeds">{group.feeds.length}</span>
+                      <span class="feed-sidebar__group-count-sep">·</span>
+                      <span class="feed-sidebar__group-unread">{unread}</span>
                     </span>
                   </button>
                 </h2>

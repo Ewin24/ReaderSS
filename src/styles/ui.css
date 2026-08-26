@@ -104,6 +104,154 @@ html[data-theme="dark"] .app-shell__settings-toggle {
   padding: 0.75rem 1rem;
 }
 
+/* ---- Library search -------------------------------------------------- */
+
+.app-shell__search {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+}
+
+.search-panel__form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.search-panel__label {
+  /* Visible, not a screen-reader-only trick: a bare magnifying glass makes
+   * people guess, and the row has space for four words. */
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.search-panel__input {
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.search-panel__clear {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.search-panel__clear:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.search-panel__status {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+  /* Reserves its line whether or not it has anything to say, so the results
+   * below do not jump up and down as a search runs. */
+  min-height: 1.2em;
+}
+
+.search-panel__error {
+  margin: 0.35rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-text);
+}
+
+/* The results are BOUNDED and scroll inside themselves. Without a ceiling,
+ * twenty results push the three panes off the bottom of a viewport-height
+ * grid, and the reader has to clear the search to get their reader back. */
+.search-panel__results {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+}
+
+.search-panel__result + .search-panel__result {
+  border-top: 1px solid var(--color-border);
+}
+
+.search-panel__result-button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  /* A result's own text can be a bare URL with nothing to break on. */
+  overflow-wrap: anywhere;
+}
+
+.search-panel__result-button:hover,
+.search-panel__result-button:focus-visible {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+.search-panel__result-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+/* "Feed" / "Article": which KIND of thing this row will open, because the two
+ * behave differently when clicked and the titles alone do not say so. */
+.search-panel__kind {
+  flex: 0 0 auto;
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid currentColor;
+}
+
+.search-panel__title {
+  font-weight: 700;
+}
+
+.search-panel__result-meta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+
+.search-panel__snippet {
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+/* The match itself. `mark`'s default yellow disappears against the hover
+ * highlight and reads as a foreign element in a dark theme, so it is restated
+ * in the app's own tokens and inverted on hover along with its row. */
+.search-panel__hit {
+  background: var(--color-accent);
+  color: var(--color-surface);
+  padding: 0 0.1em;
+}
+
+.search-panel__result-button:hover .search-panel__hit,
+.search-panel__result-button:focus-visible .search-panel__hit {
+  background: var(--color-surface);
+  color: var(--color-accent);
+}
+
 .empty-state {
   color: var(--color-text-muted);
   margin: 0;
@@ -1178,8 +1326,36 @@ html[data-visual="clean"] .add-feed-form__input {
   z-index: 1;
 }
 
+/* Two numbers in one badge: feeds, then unread. They are told apart by
+ * WEIGHT and COLOR rather than by position alone -- position is exactly what
+ * the reader cannot decode when the collection is collapsed and there is
+ * nothing underneath to compare against. Unread is the one that changes and
+ * the one worth looking at, so it carries the emphasis. */
 .feed-sidebar__group-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
   font-weight: 400;
+  flex: 0 0 auto;
+  /* Numbers line up in a column of collections instead of jittering with the
+   * glyph widths, where digit-width fonts are available. */
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-sidebar__group-feeds {
+  color: var(--color-text-muted);
+}
+
+.feed-sidebar__group-count-sep {
+  /* Muted, not `--color-border`: in the flat theme that token is pure black,
+   * which would make the separator louder than both numbers. */
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.feed-sidebar__group-unread {
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .feed-sidebar__move-open {

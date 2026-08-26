@@ -21,6 +21,8 @@ import { AddFeedContainer } from "../ui/containers/AddFeedContainer";
 import { OpmlContainer } from "../ui/containers/OpmlContainer";
 import { FeedNoteContainer } from "../ui/containers/FeedNoteContainer";
 import { RefreshContainer } from "../ui/containers/RefreshContainer";
+import { SearchContainer } from "../ui/containers/SearchContainer";
+import type { SearchResult } from "../domain/search/librarySearch";
 import type { ReadingPaneEntry } from "../ui/components/ReadingPane";
 import { DESKTOP_QUERY, useMediaQuery } from "./useMediaQuery";
 import { useRefreshSignals } from "./useRefreshSignals";
@@ -28,7 +30,12 @@ import { useServices } from "./providers/ServicesContext";
 import { useVisualSettings } from "./providers/SettingsProvider";
 import { SettingsPanel } from "../ui/components/SettingsPanel";
 import { describeError } from "../domain/errors/describeError";
-import { clampPage, pageCount, paginate } from "../domain/visual/pagination";
+import {
+  PAGINATED_PAGE_SIZE,
+  clampPage,
+  pageCount,
+  paginate,
+} from "../domain/visual/pagination";
 import {
   contentPageCount,
   splitTopLevelHtmlBlocks,
@@ -302,6 +309,38 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
     },
     [totalPageCount, selectedFeedId],
   );
+  /**
+   * The article a search result asked for, waiting for its feed's entries to
+   * arrive.
+   *
+   * Opening a result is a two-step move: selecting the feed starts a load, and
+   * only once that load lands does the entry exist in a list that can be paged
+   * to. Without this, picking the fortieth match of a feed would select the
+   * right article and leave the list sitting on page one, with the reader
+   * looking at a reading pane whose entry is nowhere in the list beside it.
+   */
+  const pendingSearchEntryRef = useRef<{ feedId: string; entryId: string } | null>(null);
+
+  useEffect(() => {
+    const pending = pendingSearchEntryRef.current;
+    if (pending === null) return;
+    if (pending.feedId !== selectedFeedId) {
+      // Something else navigated in the meantime; that wins.
+      pendingSearchEntryRef.current = null;
+      return;
+    }
+    const index = entryListItems.findIndex((item) => item.id === pending.entryId);
+    // NOT found is not a failure yet: until this feed's entries land, the list
+    // still holds the previous feed's. Held rather than dropped, so the jump
+    // happens on the render where the entries actually arrive.
+    if (index < 0) return;
+    pendingSearchEntryRef.current = null;
+    goToListPage(Math.floor(index / PAGINATED_PAGE_SIZE) + 1);
+    // Declared AFTER the page-reset effect above on purpose: loading a feed's
+    // entries makes that effect reset the list to page 1, and effects run in
+    // declaration order, so this one has the last word.
+  }, [entryListItems, selectedFeedId, goToListPage]);
+
   const visibleEntryItems = paginated ? paginate(entryListItems, currentPage) : entryListItems;
 
   // Content pagination (navMode=paginated): the reading pane's body is split
@@ -417,6 +456,32 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
   function handleBack() {
     setMobileView("list");
   }
+
+  /**
+   * Opens whatever a search result points at. This is the "take me to where
+   * you found it" half of the search: a result is only useful if it lands you
+   * on the thing itself.
+   *
+   * A FEED result behaves exactly like clicking that feed in the sidebar. An
+   * ARTICLE result selects its feed AND the article -- possibly a feed other
+   * than the one being read, which is the whole point of searching the library
+   * rather than the open list -- and opens the reading pane on a narrow
+   * viewport. The list page catches up through `pendingSearchEntryRef` above,
+   * once that feed's entries have loaded.
+   */
+  const handleSearchResult = useCallback((result: SearchResult) => {
+    if (result.kind === "feed") {
+      pendingSearchEntryRef.current = null;
+      setSelectedFeedId(result.feedId);
+      setSelectedEntryId(null);
+      setMobileView("list");
+      return;
+    }
+    pendingSearchEntryRef.current = { feedId: result.feedId, entryId: result.entryId };
+    setSelectedFeedId(result.feedId);
+    setSelectedEntryId(result.entryId);
+    setMobileView("reading");
+  }, []);
 
   // Refreshes one entry from the store after its toggle write settles, so
   // the store-driven list/pane reflect the new read/starred state. A no-op
@@ -617,6 +682,16 @@ export function App({ feeds: feedsOverride, entries: entriesOverride }: AppProps
         >
           {settingsOpen ? "Close settings" : "Settings"}
         </button>
+      </div>
+      {/* Its own full-width row (see grid.css's placement contract). Rendered
+        * in override/test mode too: like the read/star toggles, it routes
+        * through the real services rather than the override's fixed props, and
+        * it reads nothing at all until someone types. */}
+      <div class="app-shell__search">
+        <SearchContainer
+          onSelectResult={handleSearchResult}
+          refreshSignal={feedSidebarSignal}
+        />
       </div>
       <div
         id="app-settings-panel"
