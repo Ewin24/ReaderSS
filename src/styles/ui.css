@@ -1178,8 +1178,36 @@ html[data-visual="clean"] .add-feed-form__input {
   z-index: 1;
 }
 
+/* Two numbers in one badge: feeds, then unread. They are told apart by
+ * WEIGHT and COLOR rather than by position alone -- position is exactly what
+ * the reader cannot decode when the collection is collapsed and there is
+ * nothing underneath to compare against. Unread is the one that changes and
+ * the one worth looking at, so it carries the emphasis. */
 .feed-sidebar__group-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
   font-weight: 400;
+  flex: 0 0 auto;
+  /* Numbers line up in a column of collections instead of jittering with the
+   * glyph widths, where digit-width fonts are available. */
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-sidebar__group-feeds {
+  color: var(--color-text-muted);
+}
+
+.feed-sidebar__group-count-sep {
+  /* Muted, not `--color-border`: in the flat theme that token is pure black,
+   * which would make the separator louder than both numbers. */
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.feed-sidebar__group-unread {
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .feed-sidebar__move-open {

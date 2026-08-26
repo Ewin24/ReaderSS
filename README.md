@@ -157,9 +157,12 @@ as they arrived.
 with the keyboard) to fold that collection away, so a long subscription list
 does not have to be scrolled end to end. The ungrouped pile folds too.
 
-- A collapsed collection keeps its heading **and its unread count**, so you can
-  still see where something new is without opening it. When there is nothing
-  unread, the badge shows how many feeds are inside instead.
+- A collapsed collection keeps its heading and **both of its counts** —
+  `feeds · unread` — so you can still see what is in there and where something
+  new is without opening it. Hover the badge and it spells the pair out.
+  (It used to show a single number: unread when there was any, the feed count
+  otherwise. That made the same badge mean two different things depending on
+  data you cannot see while it is collapsed.)
 - Collapsed feeds leave the accessibility tree, not just the screen.
 - **This is not remembered across reloads.** Open the app again and everything
   is expanded. It is session-scoped UI state on purpose, the same as which row
