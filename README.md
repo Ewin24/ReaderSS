@@ -36,6 +36,7 @@ every possible outcome and what to do about it.
 | Mark as unread | Explicit action in the reading pane; only shown on entries that are currently read. |
 | Star / unstar | Toggles independently of read state. Starred entries are exempt from the retention prune (see below). |
 | Refresh | Re-fetches every subscribed feed using conditional GET (`ETag`/`If-Modified-Since`), so unchanged feeds cost near-nothing. Each feed's outcome is reported on its own. |
+| Search | Searches feed titles, your notes, article titles, and article text across **every** feed, previews each match, and takes you to it. See [Searching your library](#searching-your-library). |
 
 Every read/unread and star/unstar change records its own timestamp
 internally (used to resolve conflicts if sync is ever added — see
@@ -181,6 +182,49 @@ does not have to be scrolled end to end. The ungrouped pile folds too.
 > better trade. Drag and drop could be added *on top* of it later as a
 > shortcut, never as the only way.
 
+### Searching your library
+
+The search box sits above the three panes and searches **everything you have
+stored**, not the feed you happen to be reading:
+
+| Searched | Example of what that finds |
+| --- | --- |
+| Feed titles | Typing `ars` finds the *Ars Technica* feed. |
+| Your notes on feeds | Typing `rust` finds a feed whose note says "best source for Rust posts", even if neither its title nor its articles say so. |
+| Article titles | Typing `kafka` finds *Kafka in practice*, in any feed. |
+| Article text | Typing a phrase from the middle of an article finds that article. |
+
+**Every result previews the match**: the words on either side of it, with the
+match itself highlighted. Clicking one takes you to it — a feed result selects
+that feed; an article result selects its feed, opens the article, **and pages
+the entry list to the page that article is actually on**, so you are not left
+reading something that is nowhere in the list beside it.
+
+Details worth knowing:
+
+- **Case and accents are ignored, both ways.** `articulo` finds *artículo*, and
+  `artículo` finds *articulo*. The preview always shows the original spelling.
+- **Only text a reader can see is matched.** Tags, attributes, `<script>` and
+  `<style>` bodies, and comments are stripped before searching, so a class
+  named `vector-diagram` never counts as a match for `vector`.
+- **An article that matches in its title is listed once**, as a title match.
+  Results are ordered feeds first, then title matches, then body matches;
+  within each, newest first.
+- **The result count is honest.** Only the first 20 matches are listed, and when
+  there are more the panel says so — "Showing the first 20 of 57 matches" —
+  rather than presenting a truncated list as the whole answer.
+- **It runs when you stop typing**, not on every keystroke, because each search
+  re-reads the stored library. A slow answer for an older query can never
+  replace a newer one's results.
+- **A failed read says so.** If the local store cannot be read, the panel
+  reports the failure instead of showing "No matches", which would be a
+  different — and false — answer.
+
+Previews are rendered as **text**, never as markup: the match is highlighted by
+building elements around the three pieces the search returns, so no string on
+this path is ever interpreted as HTML. Article HTML still goes through the
+single DOMPurify choke point when you open it.
+
 ### Your own note on a feed
 
 Select a feed and a note row appears above the panes: **Add a note about
@@ -250,7 +294,10 @@ Stated plainly, not implied:
   do carry forward-looking names referencing a future GitHub-based merge,
   but no sync code exists to use them.)
 - **No cross-device sync, no merge algorithm.**
-- **No full-text search.**
+- **No search index.** Search works (see [Searching your library](#searching-your-library)),
+  but it scans stored text on each query instead of consulting an index built
+  at write time. Nothing is capped or skipped; it is simply proportional to how
+  much you have stored.
 - **No tags.** A feed belongs to at most one collection (see
   [Collections](#collections)), not to several at once.
 - **No article extraction.** Feeds that provide only a summary link out to

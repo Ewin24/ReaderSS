@@ -74,13 +74,14 @@ body {
 .app-shell {
   display: grid;
   grid-template-columns: 1fr;
-  /* One `auto` row per non-pane child (toggle-error, actions, settings,
-   * feed-note), then the two pane rows. `auto` means each collapses to
-   * nothing when its child renders nothing. */
-  grid-template-rows: auto auto auto auto 1fr 1fr;
+  /* One `auto` row per non-pane child (toggle-error, actions, search,
+   * settings, feed-note), then the two pane rows. `auto` means each collapses
+   * to nothing when its child renders nothing. */
+  grid-template-rows: auto auto auto auto auto 1fr 1fr;
   grid-template-areas:
     "toggle-error"
     "actions"
+    "search"
     "settings"
     "feed-note"
     "sidebar"
@@ -111,6 +112,15 @@ body {
 
 .app-shell__actions {
   grid-area: actions;
+}
+
+/* The search box and its results span every column: one result names a feed
+ * AND an article AND a line of its text, so it belongs to none of the three
+ * panes, and a preview squeezed into a 220px column would be unreadable. The
+ * row is `auto`, so it costs only the height of the input until someone
+ * actually searches. */
+.app-shell__search {
+  grid-area: search;
 }
 
 /* The settings panel is its own full-width row (D7) so it can never collide
@@ -220,10 +230,11 @@ body {
 @media (min-width: 768px) {
   .app-shell {
     grid-template-columns: 220px 320px 1fr;
-    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto auto 1fr;
     grid-template-areas:
       "toggle-error toggle-error toggle-error"
       "actions actions actions"
+      "search search search"
       "settings settings settings"
       "feed-note feed-note feed-note"
       "sidebar list pane";

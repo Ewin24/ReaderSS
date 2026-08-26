@@ -85,6 +85,7 @@ describe("grid.css: non-pane app-shell children get explicit full-width placemen
     "app-shell__toggle-error",
     "app-shell__actions",
     "app-shell__settings",
+    "app-shell__search",
     "app-shell__feed-note",
   ];
 
